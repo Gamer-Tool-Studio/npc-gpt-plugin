@@ -15,10 +15,187 @@
  *
  * @author Gamer Tool Studio
  *
- * @help DialogCraftGPT.js
+ * @help 
+ * ========================================================================
+ * Introduction
+ *========================================================================
  *
- * This plugin allows you to send a user input to a server using an API endpoint,
- * and display the server's response in a wrapped format in RPG Maker MZ.
+ *This plugin enables dynamic AI-powered conversations in RPG Maker MZ game events
+ * by sending user inputs to a server and displaying the server's creative responses 
+ * wrapped neatly in the game as one of your characaters. Craft interactive dialogue 
+ * with artificial intelligence, immersing players in captivating stories and engaging 
+ * gameplay.
+ *
+ * Features include all (but not limited to) the following:
+ *
+ *	* Control over general message settings.
+ *	* Auto-Color key words and/or database entries.
+ *	* Increases the text codes available to perform newer functions/effects.
+ *	* Ability for you to implement custom Text Code actions.
+ *	* Ability for you to implement custom Text code string replacements.
+ *	* Invoke a macro system to speed up the dev process.
+ *	* Add a Text Speed option to the Options menu.
+ *	* Add the ever so useful Word Wrap to your message system.
+ *	* Extend the choice selection process to your liking.
+ *	* The ability to enable/disable as well as show/hide certain choices.
+ *
+ * ========================================================================
+ * Requirements
+ * ========================================================================
+ *
+ * This plugin is made for RPG Maker MZ. This will not work in other       * iterations
+ * of RPG Maker.
+ *
+ * ------ Tier 1 ------
+ *
+ * This plugin is a Tier 1 plugin. Place it under other plugins of lower tier
+ * value on your Plugin Manager list (ie: 0, 1, 2, 3, 4, 5). This is to     ensure
+ * the best performance.
+ *
+ * ========================================================================
+ * 1. Setting up Plugin Parameters:
+ * ========================================================================
+ *
+ * The plugin has two parameters that you need to configure
+ *
+ * --- 
+ *    
+ * API Key 
+ *
+ * This is the API key required for making requests to the server. 
+ * If you don't have on, activate it at https://gamertollstudio.com
+ * Enter your API key in the "API Key" parameter.
+ *  
+ * ---
+ * 
+ * GPT Response Variable ID
+ *
+ * This is the ID of the variable where the GPT response
+ * will be stored. The plugin will use this variable to store the response * received
+ * from the server. You can leave it as the default value (6) or change it * to a 
+ * different variable ID.
+ *
+ * =======================================================================
+ * 2. Commands List
+ * ========================================================================
+ *  
+ * The plugin provides three command sections that you can use in your events
+ *    
+ * ---
+ * 
+ * Character Context 
+ *
+ * This command allows you to send user input data to the server
+ * as JSON, which helps the AI understand the context and generate more     * accurate responses.
+ * You can provide information about the character's name, age, personality traits,
+ * background story, knowledge of events, interests, and supportiveness.
+ *    
+ * ---
+ * 
+ * Send Request 
+ *
+ * This command is used to send the user input to the server and store
+ * the AI's response in the specified variable (GPT Response Variable). You can also
+ * provide the conversation history, which helps maintain context between interactions.
+ * 
+ * ---
+ *
+ * Display Response 
+ *
+ * This command displays the stored response in the game's message
+ * window. You can customize the appearance of the response by providing the actor image,
+ * actor name, and wrap text length (maximum word length for wrapping the response).
+ *
+ * =======================================================================
+ * 3. Arguments and Configurations
+ * =======================================================================
+ *  
+ * Here's the list of all the arguments you can config under each command section to customize chat GPT as character for your own game:
+ *
+ * ---
+ *
+ * Send Request
+ * 
+ * ------------------  ---------------------------------------------------
+ * Argument            Descripion
+ * -----------------   ---------------------------------------------------
+ * User Input          The text input provided by the player. This is usually left empty when using the plugin command in an event, as the plugin will prompt the player for input.
+ * Max Input Words     The maximum number of words allowed in the user input.
+ * History variable ID The ID of the variable used to store the conversation history.
+ *
+ * ---
+ *
+ * Character Context
+ * 
+ * ------------------  ---------------------------------------------------
+ * Argument            Descripion
+ * -----------------   ---------------------------------------------------
+ * Name                Name of the character(a string) .
+ * Age                 The age of the character (a number).
+ * Personality Traits  The traits of the character stored as a JSON array.Example: ["friendly", "optimistic", "adventurous"].
+ * Dialogue Style      The dialogue style of the character stored as a JSON array. Ecample "casual", "formal").
+ * Background Story    The background story of the character stored as a JSON object.
+ * Events Knowledge    The character's knowledge of events stored as a JSON object. Example: {"Event 1": "Crime scene", "Event 2": "Alice affair with Joseph"}.
+ * Interests           The character's interests stored as a JSON object. Example: {"Technology": 7, "Cars": 9}.
+ * Supportiveness       The supportiveness score of the character to determine how much its output shall help the player (0 to 10).
+ * Max Output Words     The maximum number of words allowed in the server response output (a number).
+ *
+ * ---
+ *
+ * Display Response
+ * 
+ * ------------------  ---------------------------------------------------
+ * Argument            Descripion
+ * -----------------   ---------------------------------------------------
+ * Event ID            The ID of the event to continue after displaying the response. Set to 0 if you don't want to continue a specific event.
+ * Event Page ID       The ID of the event page to continue after displaying the response. Set to 0 if you don't want to continue on a specific page.
+ * Actor Image         The image of the characater played by GPT to be displayed in the response window (database image).
+ * Actor Name          The name of the charactaer palyed by GPT to be displayed in the response window (text).
+ * Wrap Text Length:    The word length for wrapping the server response in the response window
+ *
+ * ---
+ *
+ * =======================================================================
+ * 3. Implementation Example
+ * =======================================================================
+ *
+ * Let's create an example event!
+ *
+  *    With the following implementation, when the player interacts with the event, the plugin will prompt the player
+ *    for input, send the user input to the server, receive the AI response, display it in the game's
+ *    message window, and reset the conversation history variable for the next interaction.
+ *
+ * ---
+ *
+ * Event Page 1
+ *
+ *    * 1. Add a new event page and select "Plugin Command."
+ *    * 2. Choose "Character Context" from the dropdown.
+ *    * 3. Fill in the arguments for character context, such as name, age, traits, dialogue style,
+ *       background story, events knowledge, interests, supportiveness, and max output words.
+ *    * 4. Add another command and choose "Send Request" from the dropdown.
+ *    * 5. Leave the "User Input" argument empty to let the plugin prompt the player for input.
+ *    * 6. Set the "Max Input Words" to limit the number of words the player can input.
+ *    * 7. Set the "History Variable ID" to store the conversation history.
+ *
+ * ---
+ *
+ * Event Page 2
+ * 
+ *    * 1. Add a new event page and set the condition to "Variable x > 1" (where "x" is the variable ID
+ *       you used for the "History Variable ID").
+ *    * 2. Select "Plugin Command."
+ *    * 3. Choose "Display Response" from the dropdown.
+ *    * 4. Fill in the arguments for displaying the response, such as event ID (0), event page ID (0),
+ *       actor image, actor name, and wrap text length.
+ *    * 5. Add another command to set "Control Variable x" (where "x" is the variable ID you used for the
+ *       "History Variable ID") to 0.
+ *
+ * ---
+ *
+ *    [Note:] Make sure to adjust the event's content and flow according to your game's needs.
+ *
+ * -----------------------------------------------------------------------
  *
  * @command sendRequest
  * @text Send Request
@@ -275,7 +452,7 @@
     const eventsKnowledge = JSON.parse(args.eventsKnowledge || '{}');
     const interests = JSON.parse(args.interests || '{}');
     const supportiveness = parseInt(args.supportiveness, 10) || 0;
-    const maxOutputWords = parseInt(args.maxOutputWords, 10) || 100; // Added the Max Output Words argument
+    const maxOutputWords = parseInt(args.maxOutputWords, 10) || 100; 
 
     // Add the apiKey value to the requestOptions headers
     const requestOptions = {
@@ -295,7 +472,7 @@
         "Events knowledge": eventsKnowledge,
         interests: interests,
         supportiveness: supportiveness,
-        "maxOutputWords": maxOutputWords, // Include the Max Output Words in the JSON data
+        "maxOutputWords": maxOutputWords, 
       }),
     };
 
@@ -319,11 +496,11 @@
 	  const eventPageId = parseInt(args.eventPageId, 10) || 0;
 	  const actorImage = args.actorImage;
 	  const actorName = args.actorName;
-	  const wrapTextLength = parseInt(args.wrapTextLength) || 40; // Set a default value in case wrapTextLength is not provided
+	  const wrapTextLength = parseInt(args.wrapTextLength) || 40; 
 
 	  const response = $gameVariables.value(gptResponseVariableId);
 	  if (typeof response === 'string') {
-		showGptResponse(response, eventId, eventPageId, actorImage, actorName, wrapTextLength); // Pass wrapTextLength as an argument
+		showGptResponse(response, eventId, eventPageId, actorImage, actorName, wrapTextLength); 
 	  }
 	});
 })();
