@@ -7,18 +7,18 @@
  * @type string
  * @default
  *
+ * @param gptResponseVariableId
+ * @text GPT Response Variable ID
+ * @desc The ID of the variable where the GPT response will be stored.
+ * @type variable
+ * @default 6
+ *
  * @author Gamer Tool Studio
  *
  * @help DialogCraftGPT.js
  *
  * This plugin allows you to send a user input to a server using an API endpoint,
  * and display the server's response in a wrapped format in RPG Maker MZ.
- *
- * @param apiKey
- * @text User API Key
- * @desc The API key to be used for making requests to the server.
- * @type string
- * @default
  *
  * @command sendRequest
  * @text Send Request
@@ -29,6 +29,12 @@
  * @desc The text input provided by the player.
  * @type multiline_string
  * @default 
+ *
+ * @arg maxInputWords
+ * @text Max Input Words
+ * @desc The maximum number of words allowed in the user input.
+ * @type number
+ * @default 50
  *
  * @command characterContext
  * @text Character Context
@@ -82,11 +88,18 @@
  * @type number
  * @default 10
  *
- * @arg conditionsToIncreaseSupportiveness
- * @text Conditions to Increase Supportiveness
- * @desc The conditions to increase the supportiveness score stored as a JSON object.
- * @type string
- * @default {"Retrieving a lost item": 1, "Helping a friend in need": 2, "Sharing valuable information": 1, "Showing empathy and understanding": 1, "Offering assistance in difficult situations": 2}
+ * @arg maxOutputWords
+ * @text Max Output Words
+ * @desc The maximum number of words allowed in the server response output.
+ * @type number
+ * @default 100
+ *
+ * @arg historyVariableId
+ * @text History Variable ID
+ * @desc The ID of the variable used to store the conversation history.
+ * @type variable
+ * @default 11
+ *
  *
  * @command displayResponse
  * @text Display Response
@@ -117,25 +130,56 @@
  * @type string
  * @default GPT Wizard
  *
- * @arg maxLength
- * @text Max Length
- * @desc The maximum length for wrapping the server response (default: 40).
+ * @arg wrapTextLenght
+ * @text Wrap text length
+ * @desc The maximum word length for wrapping the server response in the response window (default: 40).
  * @type number
  * @default 40
  */
+
 (function() {
-  // Retrieve the plugin parameters
+ // Retrieve the plugin parameters
   var pluginParams = PluginManager.parameters('GPTPlugin');
   var apiKey = pluginParams['apiKey'];
+  var gptResponseVariableId = parseInt(pluginParams['gptResponseVariableId']) || 6;
+
+
+  function showPrompt() {
+    // Define a custom prompt to get user input
+    const promptText = "Enter your message:";
+    const defaultInput = "Hi!";
+
+    // Show the prompt window to the player
+    let userInput = window.prompt(promptText, defaultInput);
+
+    // Normalize line breaks to ensure consistency
+    const normalizedInput = userInput ? userInput.replace(/\r\n|\r/g, '\n') : '';
+
+    return normalizedInput;
+  }	
+
+  function updateConversationHistory(userInput, response, historyVariableId) {
+    const variableValue = $gameVariables.value(historyVariableId);
+    const newEntry = `User: ${userInput}\nGPT: ${response}`;
+    if (variableValue) {
+      $gameVariables.setValue(historyVariableId, variableValue + '\n\n' + newEntry);
+    } else {
+      $gameVariables.setValue(historyVariableId, newEntry);
+    }
+
+    // Log the updated content of the conversation history variable
+    const updatedValue = $gameVariables.value(historyVariableId);
+    console.log(`Conversation History (Variable ${historyVariableId}):\n${updatedValue}`);
+  }
 	
-  function wrapText(text, maxLength) {
+  function wrapText(text, wrapTextLength) {
     const words = text.split(' ');
     let wrappedText = '';
     let currentLine = '';
 
     for (const word of words) {
       const potentialLine = currentLine + (currentLine ? ' ' : '') + word;
-      if (potentialLine.length <= maxLength) {
+      if (potentialLine.length <= wrapTextLength) {
         currentLine = potentialLine;
       } else {
         wrappedText += (wrappedText ? '\n' : '') + currentLine;
@@ -151,14 +195,13 @@
   }
 
   function showGptResponse(response, eventId, eventPageId, actorImage, actorName) {
-    const maxLength = $gameVariables.value(7) || 40;
-    const wrappedResponse = wrapText(response, maxLength);
+    const wrapTextLenght = $gameVariables.value(7) || 40;
+    const wrappedResponse = wrapText(response, wrapTextLenght);
 
     $gameMessage.clear();
     $gameMessage.setFaceImage(actorImage, 5);
     $gameMessage.setSpeakerName(actorName);
     $gameMessage.add(wrappedResponse);
-    $gameVariables.setValue(5, 1);
 
     if (eventId > 0) {
       const event = $gameMap.event(eventId);
@@ -170,17 +213,33 @@
 
   const pluginName = "GPTPlugin";
 
-  PluginManager.registerCommand(pluginName, "sendRequest", function (args) {
+  PluginManager.registerCommand(pluginName, 'sendRequest', function (args) {
     const eventId = parseInt(args.eventId, 10) || 0;
     const eventPageId = parseInt(args.eventPageId, 10) || 0;
-    const userInput = args.userInput || window.prompt("Please enter your response:");
+    let userInput = args.userInput.trim(); // Remove leading/trailing spaces
+    const historyVariableId = parseInt(args.historyVariableId, 10) || 1;
+    const maxInputWords = parseInt(args.maxInputWords, 10) || 50;
+
+    // Use the custom prompt to get the user input if it's empty or null
+    if (!userInput) {
+      const promptText = "Enter your message:";
+      const defaultInput = "Hi!";
+      const promptUserInput = window.prompt(promptText, defaultInput);
+
+      // Normalize line breaks to ensure consistency
+      userInput = promptUserInput ? promptUserInput.replace(/\r\n|\r/g, '\n') : 'Hi!';
+    }
+
+    // Limit the number of words in userInput
+    const words = userInput.split(' ');
+    const limitedUserInput = words.slice(0, maxInputWords).join(' ');
 
     const requestOptions = {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ text: userInput }),
+      body: JSON.stringify({ text: limitedUserInput }),
     };
 
     console.log("Sending request to server...");
@@ -196,8 +255,11 @@
       .then(function (data) {
         console.log("Received response from server:", data);
 
-        // Store the response data to be displayed in the response window
-        $gameVariables.setValue(6, data.response);
+        // Store the response data in the specified variable (GPT Response)
+        $gameVariables.setValue(gptResponseVariableId, data.response); // Updated to use the plugin parameter
+
+        // Update the conversation history variable using the command argument value
+        updateConversationHistory(userInput, data.response, historyVariableId);
       })
       .catch(function (error) {
         console.error("Error:", error);
@@ -205,36 +267,44 @@
   });
 	
   PluginManager.registerCommand(pluginName, "characterContext", function (args) {
-    const userInput = args.userInput || '';
-    const age = parseInt(args.age, 10) || 0; 
+    let userInput = args.userInput || '';
+    const age = parseInt(args.age, 10) || 0;
     const traits = JSON.parse(args.traits || '[]');
     const dialogueStyle = args.dialogueStyle || 'casual';
     const backgroundStory = args.backgroundStory || '';
     const eventsKnowledge = JSON.parse(args.eventsKnowledge || '{}');
     const interests = JSON.parse(args.interests || '{}');
     const supportiveness = parseInt(args.supportiveness, 10) || 0;
-    const storedData = {
-      name: userInput,
-      age: age, 
-      personality: {
-        traits: traits,
-        dialogueStyle: dialogueStyle
-      },
-      "background story": backgroundStory,
-      "Events knowledge": eventsKnowledge,
-      interests: interests,
-      supportiveness: supportiveness
-    };
+    const maxOutputWords = parseInt(args.maxOutputWords, 10) || 100; // Added the Max Output Words argument
+
     // Add the apiKey value to the requestOptions headers
-    const requestOptions = {    
-		method: "POST",
-        headers: {
-			"Content-Type": "application/json",
-            "Authorization": "Bearer " + apiKey
+    const requestOptions = {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + apiKey,
+      },
+      body: JSON.stringify({
+        name: userInput,
+        age: age,
+        personality: {
+          traits: traits,
+          dialogueStyle: dialogueStyle,
         },
-        body: JSON.stringify(storedData),
-    };		
-		
+        "background story": backgroundStory,
+        "Events knowledge": eventsKnowledge,
+        interests: interests,
+        supportiveness: supportiveness,
+        "maxOutputWords": maxOutputWords, // Include the Max Output Words in the JSON data
+      }),
+    };
+
+    // Get the arguments for the conversation history
+    const historyVariableId = parseInt(args.historyVariableId, 10) || 1;
+
+    // Log the variable content
+    console.log(`History Variable (ID ${historyVariableId}): ${$gameVariables.value(historyVariableId)}`);
+
     console.log("Sending character context to server...");
 
     fetch("http://localhost:3000/api/character-context", requestOptions)
@@ -250,17 +320,15 @@
       });
   });
 
-  PluginManager.registerCommand(pluginName, "displayResponse", function (args) {
-    const eventId = parseInt(args.eventId, 10) || 0;
-    const eventPageId = parseInt(args.eventPageId, 10) || 0;
-    const actorImage = args.actorImage;
-    const actorName = args.actorName;
+ PluginManager.registerCommand(pluginName, "displayResponse", function (args) {
+  const eventId = parseInt(args.eventId, 10) || 0;
+  const eventPageId = parseInt(args.eventPageId, 10) || 0;
+  const actorImage = args.actorImage;
+  const actorName = args.actorName;
 
-    $gameVariables.setValue(7, args.maxLength);
-
-    const response = $gameVariables.value(6);
-    if (typeof response === 'string') {
-      showGptResponse(response, eventId, eventPageId, actorImage, actorName);
-    }
-  });
+  const response = $gameVariables.value(6);
+  if (typeof response === 'string') {
+    showGptResponse(response, eventId, eventPageId, actorImage, actorName);
+  }
+});
 })();
