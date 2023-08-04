@@ -129,7 +129,7 @@
  * @type string
  * @default GPT Wizard
  *
- * @arg wrapTextLenght
+ * @arg wrapTextLength
  * @text Wrap text length
  * @desc The maximum word length for wrapping the server response in the response window (default: 40).
  * @type number
@@ -192,22 +192,21 @@
     return wrappedText;
   }
 
-  function showGptResponse(response, eventId, eventPageId, actorImage, actorName) {
-    const wrapTextLenght = $gameVariables.value(7) || 40;
-    const wrappedResponse = wrapText(response, wrapTextLenght);
+  function showGptResponse(response, eventId, eventPageId, actorImage, actorName, wrapTextLength) {
+  const wrappedResponse = wrapText(response, wrapTextLength);
 
-    $gameMessage.clear();
-    $gameMessage.setFaceImage(actorImage, 5);
-    $gameMessage.setSpeakerName(actorName);
-    $gameMessage.add(wrappedResponse);
+  $gameMessage.clear();
+  $gameMessage.setFaceImage(actorImage, 5);
+  $gameMessage.setSpeakerName(actorName);
+  $gameMessage.add(wrappedResponse);
 
-    if (eventId > 0) {
-      const event = $gameMap.event(eventId);
-      if (event) {
-        event.start(eventPageId);
-      }
+  if (eventId > 0) {
+    const event = $gameMap.event(eventId);
+    if (event) {
+      event.start(eventPageId);
     }
   }
+}
 
   const pluginName = "GPTPlugin";
 
@@ -217,7 +216,6 @@
     let userInput = args.userInput.trim(); // Remove leading/trailing spaces
     const historyVariableId = parseInt(args.historyVariableId, 10) || 1;
     const maxInputWords = parseInt(args.maxInputWords, 10) || 50;
-    const maxOutputWords = parseInt(args.maxOutputWords, 10) || 100; // Added the Max Output Words argument
 
     // Use the custom prompt to get the user input if it's empty or null
     if (!userInput) {
@@ -317,14 +315,15 @@
   });
 
   PluginManager.registerCommand(pluginName, "displayResponse", function (args) {
-    const eventId = parseInt(args.eventId, 10) || 0;
-    const eventPageId = parseInt(args.eventPageId, 10) || 0;
-    const actorImage = args.actorImage;
-    const actorName = args.actorName;
+	  const eventId = parseInt(args.eventId, 10) || 0;
+	  const eventPageId = parseInt(args.eventPageId, 10) || 0;
+	  const actorImage = args.actorImage;
+	  const actorName = args.actorName;
+	  const wrapTextLength = parseInt(args.wrapTextLength) || 40; // Set a default value in case wrapTextLength is not provided
 
-    const response = $gameVariables.value(6);
-    if (typeof response === 'string') {
-      showGptResponse(response, eventId, eventPageId, actorImage, actorName);
-    }
-  });
+	  const response = $gameVariables.value(gptResponseVariableId);
+	  if (typeof response === 'string') {
+		showGptResponse(response, eventId, eventPageId, actorImage, actorName, wrapTextLength); // Pass wrapTextLength as an argument
+	  }
+	});
 })();
