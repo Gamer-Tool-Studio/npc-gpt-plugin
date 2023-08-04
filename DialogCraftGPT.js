@@ -36,6 +36,12 @@
  * @type number
  * @default 50
  *
+ * @arg historyVariableId
+ * @text History Variable ID
+ * @desc The ID of the variable used to store the conversation history.
+ * @type variable
+ * @default 11
+ *
  * @command characterContext
  * @text Character Context
  * @desc Stores the user input data and sends it to the server as JSON.
@@ -94,13 +100,6 @@
  * @type number
  * @default 100
  *
- * @arg historyVariableId
- * @text History Variable ID
- * @desc The ID of the variable used to store the conversation history.
- * @type variable
- * @default 11
- *
- *
  * @command displayResponse
  * @text Display Response
  * @desc Displays the stored response in the response window.
@@ -143,7 +142,6 @@
   var apiKey = pluginParams['apiKey'];
   var gptResponseVariableId = parseInt(pluginParams['gptResponseVariableId']) || 6;
 
-
   function showPrompt() {
     // Define a custom prompt to get user input
     const promptText = "Enter your message:";
@@ -171,7 +169,7 @@
     const updatedValue = $gameVariables.value(historyVariableId);
     console.log(`Conversation History (Variable ${historyVariableId}):\n${updatedValue}`);
   }
-	
+
   function wrapText(text, wrapTextLength) {
     const words = text.split(' ');
     let wrappedText = '';
@@ -219,6 +217,7 @@
     let userInput = args.userInput.trim(); // Remove leading/trailing spaces
     const historyVariableId = parseInt(args.historyVariableId, 10) || 1;
     const maxInputWords = parseInt(args.maxInputWords, 10) || 50;
+    const maxOutputWords = parseInt(args.maxOutputWords, 10) || 100; // Added the Max Output Words argument
 
     // Use the custom prompt to get the user input if it's empty or null
     if (!userInput) {
@@ -239,7 +238,10 @@
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ text: limitedUserInput }),
+      body: JSON.stringify({
+        text: limitedUserInput,
+        history: $gameVariables.value(historyVariableId), // Include the conversation history
+      }),
     };
 
     console.log("Sending request to server...");
@@ -258,7 +260,7 @@
         // Store the response data in the specified variable (GPT Response)
         $gameVariables.setValue(gptResponseVariableId, data.response); // Updated to use the plugin parameter
 
-        // Update the conversation history variable using the command argument value
+        // Update the conversation history variable
         updateConversationHistory(userInput, data.response, historyVariableId);
       })
       .catch(function (error) {
@@ -299,12 +301,6 @@
       }),
     };
 
-    // Get the arguments for the conversation history
-    const historyVariableId = parseInt(args.historyVariableId, 10) || 1;
-
-    // Log the variable content
-    console.log(`History Variable (ID ${historyVariableId}): ${$gameVariables.value(historyVariableId)}`);
-
     console.log("Sending character context to server...");
 
     fetch("http://localhost:3000/api/character-context", requestOptions)
@@ -320,15 +316,15 @@
       });
   });
 
- PluginManager.registerCommand(pluginName, "displayResponse", function (args) {
-  const eventId = parseInt(args.eventId, 10) || 0;
-  const eventPageId = parseInt(args.eventPageId, 10) || 0;
-  const actorImage = args.actorImage;
-  const actorName = args.actorName;
+  PluginManager.registerCommand(pluginName, "displayResponse", function (args) {
+    const eventId = parseInt(args.eventId, 10) || 0;
+    const eventPageId = parseInt(args.eventPageId, 10) || 0;
+    const actorImage = args.actorImage;
+    const actorName = args.actorName;
 
-  const response = $gameVariables.value(6);
-  if (typeof response === 'string') {
-    showGptResponse(response, eventId, eventPageId, actorImage, actorName);
-  }
-});
+    const response = $gameVariables.value(6);
+    if (typeof response === 'string') {
+      showGptResponse(response, eventId, eventPageId, actorImage, actorName);
+    }
+  });
 })();
