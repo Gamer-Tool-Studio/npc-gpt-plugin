@@ -16,8 +16,8 @@
  * @author Gamer Tool Studio
  *
  * @help 
- * 
- * ===============================================================================
+ *  
+ ===============================================================================
  * Introduction
  ===============================================================================
  *
@@ -51,9 +51,9 @@
  * value on your Plugin Manager list (ie: 0, 1, 2, 3, 4, 5). This is to ensure
  * the best performance.
  *
- * ===========================================================================
+ * =============================================================================
  * 1. Setting up Plugin Parameters:
- * ===========================================================================
+ *============================================================================
  *
  * The plugin has two parameters that you need to configure.
  *
@@ -61,18 +61,18 @@
  *    
  * API Key 
  *
- * This is the API key required for making requests to the server. 
- * If you don't have on, activate it at https://gamertoolstudio.com
- * Enter your API key in the "API Key" parameter.
+ * This is the API key required for making requests to the server. If you don't
+ * have one, activate it at https://gamertoolstudio.com. Enter your API key in 
+ * the "API Key" parameter.
  *  
  * ---
  * 
  * GPT Response Variable ID
  *
- * This is the ID of the variable where the GPT response
- * will be stored. The plugin will use this variable to store the response 
- * received from the server. You can leave it as the default value (6) or 
- * change it to a different variable ID.
+ * This is the ID of the variable where the GPT response will be stored. The 
+ * plugin will use this variable to store the response received from the server.
+ * You can leave it as the default value (6) or change it to a different 
+ * variable ID.
  *
  * =============================================================================
  * 2. Commands List
@@ -264,7 +264,7 @@
  * @text Age
  * @desc The age of the character.
  * @type number
- * @default 0
+ * @default 17
  *
  * @arg traits
  * @text Personality Traits
@@ -528,7 +528,6 @@
 	  const actorImage = args.actorImage;
 	  const actorName = args.actorName;
 	  const wrapTextLength = parseInt(args.wrapTextLength) || 40; 
-
 	  const response = $gameVariables.value(gptResponseVariableId);
 	  if (typeof response === 'string') {
 		showGptResponse(response, eventId, eventPageId, actorImage, actorName, wrapTextLength); 
