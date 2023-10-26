@@ -1,11 +1,12 @@
+
 /*:
  * @plugindesc [RPG Maker MZ] [Tier 1] [Version 1.0] [Gamer Tools Studio]
  * 
- * @param apiKey
- * @text API Key
- * @desc The API key to be used for making requests to the server.
- * @type string
- * @default
+* @param apiKey
+* @text API Key
+* @desc The API key to be used for making requests to the server.
+* @type string
+* @default
  *
  * @param gptResponseVariableId
  * @text GPT Response Variable ID
@@ -320,7 +321,7 @@
  * @type number
  * @default 100
  *
- * @arg contextVariableID
+ * @arg contextVariableId
  * @text Context Variable ID
  * @desc The ID of the variable to store the character context data.
  * @type variable
@@ -364,7 +365,7 @@
 
  (function() {
   // Retrieve the plugin parameters
-  var pluginParams = PluginManager.parameters('GPTPlugin');
+  var pluginParams = PluginManager.parameters('DialogCraftGptPlugin');
   var apiKey = pluginParams['apiKey'];
   var gptResponseVariableId = parseInt(pluginParams['gptResponseVariableId']) || 6;
   var playerName = pluginParams['playerName'];
@@ -374,31 +375,50 @@
    function showPrompt() {
      // Define a custom prompt to get user input
      const promptText = "Enter your message:";
-     const defaultInput = "Hi!";
+     const defaultInput = "hi";
  
      // Show the prompt window to the player
      let userInput = window.prompt(promptText, defaultInput);
  
      // Normalize line breaks to ensure consistency
      const normalizedInput = userInput ? userInput.replace(/\r\n|\r/g, '\n') : '';
- 
+     
+     console.log("User Input:", normalizedInput); // Add this line to log the user's input.
+     
      return normalizedInput;
-   }	
+   }  
  
    function updateConversationHistory(userInput, response, historyVariableId) {
-     const variableValue = $gameVariables.value(historyVariableId);
-     const newEntry = `User: ${userInput}\nGPT: ${response}`;
-     if (variableValue) {
-       $gameVariables.setValue(historyVariableId, variableValue + '\n\n' + newEntry);
-     } else {
-       $gameVariables.setValue(historyVariableId, newEntry);
-     }
- 
-     // Log the updated content of the conversation history variable
-     const updatedValue = $gameVariables.value(historyVariableId);
-     console.log(`Conversation History (Variable ${historyVariableId}):\n${updatedValue}`);
-   }
- 
+    const variableValue = $gameVariables.value(historyVariableId);
+    const historyEntry = {
+      role: "user",
+      content: userInput
+    };
+  
+    if (variableValue) {
+      try {
+        const chatHistory = JSON.parse(variableValue);
+  
+        if (Array.isArray(chatHistory)) {
+          chatHistory.push(historyEntry);
+          chatHistory.push(response);
+          $gameVariables.setValue(historyVariableId, JSON.stringify(chatHistory));
+        } else {
+          // If the chat history is not an array, create a new array with the history
+          $gameVariables.setValue(historyVariableId, JSON.stringify([historyEntry, response]));
+        }
+      } catch (error) {
+        console.error("Error parsing chat history:", error);
+      }
+    } else {
+      $gameVariables.setValue(historyVariableId, JSON.stringify([historyEntry, response]));
+    }
+  
+    // Log the updated content of the conversation history variable
+    const updatedValue = $gameVariables.value(historyVariableId);
+    console.log(`Conversation History (Variable ${historyVariableId}):\n${updatedValue}`);
+  }
+   
    function wrapText(text, wrapTextLength) {
      const words = text.split(' ');
      let wrappedText = '';
@@ -421,128 +441,144 @@
      return wrappedText;
    }
  
-   function showGptResponse(response, eventId, eventPageId, actorImage, actorName, wrapTextLength) {
-   const wrappedResponse = wrapText(response, wrapTextLength);
- 
-   $gameMessage.clear();
-   $gameMessage.setFaceImage(actorImage, 5);
-   $gameMessage.setSpeakerName(actorName);
-   $gameMessage.add(wrappedResponse);
- 
-   if (eventId > 0) {
-     const event = $gameMap.event(eventId);
-     if (event) {
-       event.start(eventPageId);
-     }
-   }
- }
- 
-   const pluginName = "GPTPlugin";
+   function showGptResponse(response, eventId, eventPageId, actorImage, actorName, wrapTextLength, historyVariableId) {
+    const responseContent = response.content; // Get the "content" from the response
+  
+    const wrappedResponse = wrapText(responseContent, wrapTextLength);
+  
+    $gameMessage.clear();
+    $gameMessage.setFaceImage(actorImage, 5);
+    $gameMessage.setSpeakerName(actorName);
+    $gameMessage.add(wrappedResponse);
+  
+    if (eventId > 0) {
+      const event = $gameMap.event(eventId);
+      if (event) {
+        event.start(eventPageId);
+      }
+    }
+  
+    if (response.chatHistory) {
+      // Store the chatHistory in a variable
+      $gameVariables.setValue(historyVariableId, JSON.stringify(response.chatHistory));
+    }
+  }
+   
+   const pluginName = "DialogCraftGptPlugin";
  
    PluginManager.registerCommand(pluginName, 'sendRequest', function (args) {
-     const eventId = parseInt(args.eventId, 10) || 0;
-     const eventPageId = parseInt(args.eventPageId, 10) || 0;
-     const historyVariableId = parseInt(args.historyVariableId, 10) || 1;
-     const contextVariableID = parseInt(args.contextVariableID, 10) || 0; // Added this line
- 
-     let userInput = args.userInput.trim(); // Remove leading/trailing spaces
-     const maxInputWords = parseInt(args.maxInputWords, 10) || 50;
- 
-     // Use the custom prompt to get the user input if it's empty or null
-     if (!userInput) {
-         const promptText = "Enter your message:";
-         const defaultInput = "Hi!";
-         const promptUserInput = window.prompt(promptText, defaultInput);
- 
-         // Normalize line breaks to ensure consistency
-         userInput = promptUserInput ? promptUserInput.replace(/\r\n|\r/g, '\n') : 'Hi!';
-     }
- 
-     // Limit the number of words in userInput
-     const words = userInput.split(' ');
-     const limitedUserInput = words.slice(0, maxInputWords).join(' ');
- 
-     let requestOptions = {
-         method: 'POST',
-         headers: {
-             'Content-Type': 'application/json',
-         },
-     };
- 
-     // Check if the historyVariableId contains data
-     if ($gameVariables.value(historyVariableId)) {
-         requestOptions.body = JSON.stringify({
-             text: limitedUserInput,
-             playerName: playerName,
-             accountId: playerAccountId,
-             chatHistory: $gameVariables.value(historyVariableId),
-             characterContext: {} // Empty characterContext
-         });
-     } else {
-         // If historyVariableID is empty, use characterContext from contextVariableID
-         const characterContext = $gameVariables.value(contextVariableID);
-         requestOptions.body = JSON.stringify({
-             text: limitedUserInput,
-             playerName: playerName,
-             accountId: playerAccountId,
-             chatHistory: $gameVariables.value(historyVariableId),
-             characterContext: characterContext
-         });
-     }
- 
-     console.log("Sending request to server...");
- 
-     fetch("http://localhost:3002/api/v1/chat/send-message", requestOptions) // Updated URL
-         .then(function (response) {
-             if (response.ok) {
-                 return response.json();
-             } else {
-                 throw new Error("HTTP request failed");
-             }
-         })
-         .then(function (data) {
-             console.log("Received response from server:", data);
- 
-             // Store the response data in the specified variable (GPT Response)
-             $gameVariables.setValue(gptResponseVariableId, data.response); // Updated to use the plugin parameter
- 
-             // Update the conversation history variable
-             updateConversationHistory(userInput, data.response, historyVariableId);
-         })
-         .catch(function (error) {
-             console.error("Error:", error);
-         });
- });
- 
+    const eventId = parseInt(args.eventId, 10) || 0;
+    const eventPageId = parseInt(args.eventPageId, 10) || 0;
+    const historyVariableId = parseInt(args.historyVariableId, 10) || 1;
+    let userInput = args.userInput.trim(); // Remove leading/trailing spaces
+    const maxInputWords = parseInt(args.maxInputWords, 10) || 50;
+    const contextVariableId = 12; 
+  
+    // Use the custom prompt to get the user input if it's empty or null
+    if (!userInput) {
+      userInput = showPrompt(); // Call the showPrompt function to get user input
+      // Normalize line breaks to ensure consistency
+      userInput = userInput ? userInput.replace(/\r\n|\r/g, '\n') : 'Hi!';
+    }
+  
+    // Limit the number of words in userInput
+    const words = userInput.split(' ');
+    const limitedUserInput = words.slice(0, maxInputWords).join(' ');
+
+    let requestOptions = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    };
+  
+    // Check if the historyVariableId contains data
+    if ($gameVariables.value(historyVariableId)) {
+      requestOptions.body = JSON.stringify({
+        userInput: limitedUserInput,
+        playerName: playerName,
+        accountId: playerAccountId,
+        chatHistory: $gameVariables.value(historyVariableId), // Use the chat history content
+        characterContext: {}, 
+      });
+    } else {
+      // If historyVariableID is empty, use characterContext from contextVariableId
+      requestOptions.body = JSON.stringify({
+        userInput: limitedUserInput,
+        playerName: playerName,
+        accountId: playerAccountId,
+        chatHistory: [], // Use an empty array for no history
+        characterContext: $gameVariables.value(contextVariableId), // Use the contextVariableID content
+      });
+    }
+    console.log("contextVariableId content:", $gameVariables.value(contextVariableId)); // Log the context data
+    console.log("Request data:", requestOptions.body);
+    console.log("Sending request to the server...");
+  
+    fetch("http://localhost:3002/api/v1/chat/send-message", requestOptions)
+      .then(function (response) {
+        if (response.ok) {
+          return response.json();
+        } else {
+          throw new Error("HTTP request failed");
+        }
+      })
+      .then(function (data) {
+        console.log("Received response from server:", data);
+  
+        // Store the response data in the specified variable (GPT Response)
+        $gameVariables.setValue(gptResponseVariableId, data.response); // Updated to use the plugin parameter
+  
+        // Update the conversation history variable
+        updateConversationHistory(userInput, data.response, historyVariableId);
+      })
+      .catch(function (error) {
+        console.error("Error:", error);
+      });
+  });
    
-   PluginManager.registerCommand(pluginName, "characterContext", function (args) {
-     const age = parseInt(args.age, 10) || 0;
-     const traits = JSON.parse(args.traits || '[]');
-     const dialogueStyle = args.dialogueStyle || '';
-     const backgroundStory = args.backgroundStory || '';
-     const eventsKnowledge = JSON.parse(args.eventsKnowledge || '{}');
-     const interests = JSON.parse(args.interests || '{}');
-     const supportiveness = parseInt(args.supportiveness, 10) || 0;
-     const maxOutputWords = parseInt(args.maxOutputWords, 10) || 100;
-     
-     const context = {
-         name: args.name,
-         age: age,
-         personality: {
-             traits: traits,
-             dialogueStyle: dialogueStyle
-         },
-         "background story": backgroundStory,
-         "Events knowledge": eventsKnowledge,
-         interests: interests,
-         supportiveness: supportiveness,
-         maxOutputWords: maxOutputWords
-     };
- 
-     const contextVariableID = args.contextVariableID;
-     $gameVariables.setValue(contextVariableID, JSON.stringify(context));
- });
- 
+  PluginManager.registerCommand(pluginName, "characterContext", function (args) {
+    const age = parseInt(args.age, 10) || 0;
+    const traits = JSON.parse(args.traits || '[]');
+    const dialogueStyle = args.dialogueStyle || '';
+    const backgroundStory = args.backgroundStory || '';
+    
+    // Parse the eventsKnowledge as a string
+    const eventsKnowledge = args.eventsKnowledge || '';
+
+    // Add error handling for JSON parsing for interests
+    let interests = {};
+    try {
+        interests = JSON.parse(args.interests || '{}');
+    } catch (e) {
+        console.error("Error parsing 'interests':", e);
+    }
+
+    const supportiveness = parseInt(args.supportiveness, 10) || 0;
+    const maxOutputWords = parseInt(args.maxOutputWords, 10) || 100;
+    const contextVariableId = parseInt(args.contextVariableId, 10);
+
+    // Create the context object directly from the arguments
+    const characterContext = {
+        name: args.name,
+        age: age,
+        personality: {
+            traits: traits,
+            dialogueStyle: dialogueStyle,
+        },
+        "background story": backgroundStory,
+        "game knowledge": eventsKnowledge, // Use the provided string directly
+        interests: interests,
+        supportiveness: supportiveness,
+    };
+
+    // Store the context object in the specified variable (contextVariableId)
+    $gameVariables.setValue(contextVariableId, characterContext);
+
+    // Log the provided contextVariableId for debugging
+    console.log("Provided contextVariableId:", contextVariableId);
+    console.log("contextVariableId content:", $gameVariables.value(contextVariableId)); // Log the context data
+});
  
  PluginManager.registerCommand(pluginName, "displayResponse", function (args) {
    const eventId = parseInt(args.eventId, 10) || 0;
@@ -551,211 +587,10 @@
    const actorName = args.actorName;
    const wrapTextLength = parseInt(args.wrapTextLength) || 40;
    const response = $gameVariables.value(gptResponseVariableId);
+   const historyVariableId = parseInt(args.historyVariableId, 10); 
  
-   if (response && typeof response === 'string') {
-     showGptResponse(response, eventId, eventPageId, actorImage, actorName, wrapTextLength);
-   }  
-   if (response && response.chatHistory) {
-     // Store the chatHistory in a variable
-     $gameVariables.setValue(args.historyVariableId, JSON.stringify(response.chatHistory));
-   }
- })();
-
-(function() {
- // Retrieve the plugin parameters
- var pluginParams = PluginManager.parameters('GPTPlugin');
- var apiKey = pluginParams['apiKey'];
- var gptResponseVariableId = parseInt(pluginParams['gptResponseVariableId']) || 6;
- var playerName = pluginParams['playerName'];
- var playerAccountId = pluginParams['playerAccountId'];
- 
-
-  function showPrompt() {
-    // Define a custom prompt to get user input
-    const promptText = "Enter your message:";
-    const defaultInput = "Hi!";
-
-    // Show the prompt window to the player
-    let userInput = window.prompt(promptText, defaultInput);
-
-    // Normalize line breaks to ensure consistency
-    const normalizedInput = userInput ? userInput.replace(/\r\n|\r/g, '\n') : '';
-
-    return normalizedInput;
-  }	
-
-  function updateConversationHistory(userInput, response, historyVariableId) {
-    const variableValue = $gameVariables.value(historyVariableId);
-    const newEntry = `User: ${userInput}\nGPT: ${response}`;
-    if (variableValue) {
-      $gameVariables.setValue(historyVariableId, variableValue + '\n\n' + newEntry);
-    } else {
-      $gameVariables.setValue(historyVariableId, newEntry);
-    }
-
-    // Log the updated content of the conversation history variable
-    const updatedValue = $gameVariables.value(historyVariableId);
-    console.log(`Conversation History (Variable ${historyVariableId}):\n${updatedValue}`);
+   if (response && typeof response === 'object') {
+    showGptResponse(response, eventId, eventPageId, actorImage, actorName, wrapTextLength, historyVariableId);
   }
-
-  function wrapText(text, wrapTextLength) {
-    const words = text.split(' ');
-    let wrappedText = '';
-    let currentLine = '';
-
-    for (const word of words) {
-      const potentialLine = currentLine + (currentLine ? ' ' : '') + word;
-      if (potentialLine.length <= wrapTextLength) {
-        currentLine = potentialLine;
-      } else {
-        wrappedText += (wrappedText ? '\n' : '') + currentLine;
-        currentLine = word;
-      }
-    }
-
-    if (currentLine) {
-      wrappedText += (wrappedText ? '\n' : '') + currentLine;
-    }
-
-    return wrappedText;
-  }
-
-  function showGptResponse(response, eventId, eventPageId, actorImage, actorName, wrapTextLength) {
-  const wrappedResponse = wrapText(response, wrapTextLength);
-
-  $gameMessage.clear();
-  $gameMessage.setFaceImage(actorImage, 5);
-  $gameMessage.setSpeakerName(actorName);
-  $gameMessage.add(wrappedResponse);
-
-  if (eventId > 0) {
-    const event = $gameMap.event(eventId);
-    if (event) {
-      event.start(eventPageId);
-    }
-  }
-}
-
-  const pluginName = "GPTPlugin";
-
-  PluginManager.registerCommand(pluginName, 'sendRequest', function (args) {
-    const eventId = parseInt(args.eventId, 10) || 0;
-    const eventPageId = parseInt(args.eventPageId, 10) || 0;
-    const historyVariableId = parseInt(args.historyVariableId, 10) || 1;
-    const contextVariableID = parseInt(args.contextVariableID, 10) || 0; // Added this line
-
-    let userInput = args.userInput.trim(); // Remove leading/trailing spaces
-    const maxInputWords = parseInt(args.maxInputWords, 10) || 50;
-
-    // Use the custom prompt to get the user input if it's empty or null
-    if (!userInput) {
-        const promptText = "Enter your message:";
-        const defaultInput = "Hi!";
-        const promptUserInput = window.prompt(promptText, defaultInput);
-
-        // Normalize line breaks to ensure consistency
-        userInput = promptUserInput ? promptUserInput.replace(/\r\n|\r/g, '\n') : 'Hi!';
-    }
-
-    // Limit the number of words in userInput
-    const words = userInput.split(' ');
-    const limitedUserInput = words.slice(0, maxInputWords).join(' ');
-
-    let requestOptions = {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    };
-
-    // Check if the historyVariableId contains data
-    if ($gameVariables.value(historyVariableId)) {
-        requestOptions.body = JSON.stringify({
-            text: limitedUserInput,
-            playerName: playerName,
-            accountId: playerAccountId,
-            chatHistory: $gameVariables.value(historyVariableId),
-            characterContext: {} // Empty characterContext
-        });
-    } else {
-        // If historyVariableID is empty, use characterContext from contextVariableID
-        const characterContext = $gameVariables.value(contextVariableID);
-        requestOptions.body = JSON.stringify({
-            text: limitedUserInput,
-            playerName: playerName,
-            accountId: playerAccountId,
-            chatHistory: $gameVariables.value(historyVariableId),
-            characterContext: characterContext
-        });
-    }
-
-    console.log("Sending request to server...");
-
-    fetch("http://localhost:3002/api/v1/chat/send-message", requestOptions) // Updated URL
-        .then(function (response) {
-            if (response.ok) {
-                return response.json();
-            } else {
-                throw new Error("HTTP request failed");
-            }
-        })
-        .then(function (data) {
-            console.log("Received response from server:", data);
-
-            // Store the response data in the specified variable (GPT Response)
-            $gameVariables.setValue(gptResponseVariableId, data.response); // Updated to use the plugin parameter
-
-            // Update the conversation history variable
-            updateConversationHistory(userInput, data.response, historyVariableId);
-        })
-        .catch(function (error) {
-            console.error("Error:", error);
-        });
 });
-
-	
-  PluginManager.registerCommand(pluginName, "characterContext", function (args) {
-    const age = parseInt(args.age, 10) || 0;
-    const traits = JSON.parse(args.traits || '[]');
-    const dialogueStyle = args.dialogueStyle || '';
-    const backgroundStory = args.backgroundStory || '';
-    const eventsKnowledge = JSON.parse(args.eventsKnowledge || '{}');
-    const interests = JSON.parse(args.interests || '{}');
-    const supportiveness = parseInt(args.supportiveness, 10) || 0;
-    const maxOutputWords = parseInt(args.maxOutputWords, 10) || 100;
-    
-    const context = {
-        name: args.name,
-        age: age,
-        personality: {
-            traits: traits,
-            dialogueStyle: dialogueStyle
-        },
-        "background story": backgroundStory,
-        "Events knowledge": eventsKnowledge,
-        interests: interests,
-        supportiveness: supportiveness,
-        maxOutputWords: maxOutputWords
-    };
-
-    const contextVariableID = args.contextVariableID;
-    $gameVariables.setValue(contextVariableID, JSON.stringify(context));
-});
-
-
-PluginManager.registerCommand(pluginName, "displayResponse", function (args) {
-  const eventId = parseInt(args.eventId, 10) || 0;
-  const eventPageId = parseInt(args.eventPageId, 10) || 0;
-  const actorImage = args.actorImage;
-  const actorName = args.actorName;
-  const wrapTextLength = parseInt(args.wrapTextLength) || 40;
-  const response = $gameVariables.value(gptResponseVariableId);
-
-  if (response && typeof response === 'string') {
-    showGptResponse(response, eventId, eventPageId, actorImage, actorName, wrapTextLength);
-  }  
-  if (response && response.chatHistory) {
-    // Store the chatHistory in a variable
-    $gameVariables.setValue(args.historyVariableId, JSON.stringify(response.chatHistory));
-  }
 })();
