@@ -10,19 +10,19 @@
  *
  * @param gptResponseVariableId
  * @text GPT Response Variable ID
- * @desc The ID of the variable where the GPT response will be stored.
+ * @desc The ID of the variable where the GPT response will temporarily be stored.
  * @type variable
  * @default 6
  * 
  * @param playerName
  * @text Player Name
- * @desc The name of the player.
+ * @desc Your user name
  * @type string
  * @default
  *
  * @param playerAccountId
  * @text Player Account ID
- * @desc The account ID of the player.
+ * @desc Your Gamer Tool Studio account ID
  * @type string
  * @default
  *
@@ -34,16 +34,16 @@
  * Introduction
  ===============================================================================
  *
- * This plugin enables dynamic AI-powered conversations in RPG Maker MZ game 
- * events by sending user inputs to a server and displaying the server's
- * creative responses wrapped neatly in the game as one of your characaters. 
- * Craft interactive dialogue with artificial intelligence, immersing 
- * players in captivating stories and engaging gameplay.
+ * This plugin enables the deployment of dynamic AI-powered conversations
+ * with NPCs in RPG Maker MZ game events by sending user inputs to a server 
+ * and displaying the server's creative responses wrapped neatly in the game 
+ * as one of your characaters. Craft interactive dialogues with artificial 
+ * intelligence, immersing players in captivating stories and engaging gameplay.
  *
  * Features include, but are not limited to, the following:
  *
  *  * Enable user text input for interactive character conversations.
- *  * Send user inputs as requests to Chat GPT for dynamic responses.
+ *  * Send user inputs as requests to Chat GPT API for dynamic responses.
  *  * Establish character contexts and traits to guide Chat GPT's interactions.
  *  * Receive Chat GPT's responses seamlessly, delivered through in-game    
  *    characters. 
@@ -68,25 +68,42 @@
  * 1. Setting up Plugin Parameters:
  *============================================================================
  *
- * The plugin has two parameters that you need to configure.
+ * The plugin has four parameters that you need to configure.
  *
  * --- 
  *    
  * API Key 
  *
- * This is the API key required for making requests to the server. If you don't
- * have one, activate it at https://gamertoolstudio.com. Enter your API key in 
- * the "API Key" parameter.
+ * This is the API key required for making requests to the server. Log in
+ * to your account with Gamer Tools Studio and activate your key at 
+ * https://gamertoolstudio.com. Enter your API key in the "API Key"
+ * parameter.
  *  
  * ---
  * 
+ * Player Name
+ * 
+ * This is the ID of your account with Gamer Tools Studio. It is used to keep
+ * track of your token usage when making requests to the server. Enter your 
+ * Account ID in the "AccountId" parameter.
+ * 
+ * ---
+ * 
+ * Account ID
+ * 
+ * This is the ID of your account with Gamer Tools Studio. It is used to keep
+ * track of your token usage when making requests to the server. Enter your 
+ * Account ID in the "AccountId" parameter.
+ * 
+ * ---
+ * 
  * GPT Response Variable ID
- *
- * This is the ID of the variable where the GPT response will be stored. The 
- * plugin will use this variable to store the response received from the server.
- * You can leave it as the default value (6) or change it to a different 
- * variable ID.
- *
+ * 
+ * This is the ID of the variable where the character response  provided by the 
+ * server is termporarily stored. It is used to be displayed in the game as the
+ * NPC response and is updated every single request.You can leave it as the
+ * default value (6) or change it to a different variable ID.
+ * 
  * =============================================================================
  * 2. Commands List
  *============================================================================
@@ -97,9 +114,9 @@
  * 
  * Character Context 
  *
- * This command allows you to send user input data to the server as JSON, 
- * which helps the AI understand the context and generate more accurate 
- * responses. You can provide information about the character's name, age,
+ * This command allows you to define the NPC and helps the AI understand the 
+ * context and generate more accurate responses. Y
+ * ou can provide information about the character's name, age,
  * personality traits, background story, knowledge of events, interests and
  * supportiveness.
  *    
@@ -108,8 +125,8 @@
  * Send Request 
  *
  * This command is used to send the user input to the server and store the AI's 
- * response in the specified variable (GPT Response Variable). You can also 
- * provide the * conversation history, which helps maintain context between 
+ * response in the specified variable (GPT Response Variable). It also 
+ * provides the chat history, which helps maintain context between 
  * interactions.
  * 
  * ---
@@ -126,7 +143,7 @@
  * ===========================================================================
  *  
  * Here's the list of all the arguments you can config under each command 
- * section to customize chat GPT as character for your own game:
+ * section to customize chat GPT as an NPC for your own game:
  *
  * ---
  *
@@ -142,7 +159,9 @@
  * Max Input Words     The maximum number of words allowed in the user input.
  *
  * History Variable ID The ID of the variable used to store the conversation 
- *                     history.
+ *                     history between the player and the NPC. Its default 
+ *                     value is set to (11) but please ensure each NPC has a 
+ *                     different Context Variable ID value.   
  *
  * ---
  *
@@ -162,15 +181,19 @@
  * Background Story    The background story of the character stored as a JSON 
  *                     object.
  *                     The character's knowledge of events stored as a JSON 
- * Events Knowledge    object. Example: {"Event 1": "Crime scene", "Event 2": 
- *                     "Alice affair with Joseph"}.
+ * Events Knowledge    Array. Example: Knows there is a secret map at the entrance
+ *                     of the big cave under a yellow flower and  knows the player 
+ *                     harduous future". 
  * Interests           The character's interests stored as a JSON object. 
  *                     Example: {"Technology": 7, "Cars": 9}.
  * Supportiveness      The supportiveness score of the character to determine 
  *                     how much its output shall help the player (0 to 10).
  * Max Output Words    The maximum number of words allowed in the server 
  *                     response output (a number).
- *
+ * Context Variable ID The ID of the variable used to store an NPC "Character Context"
+ *                     data. Its default value is set to (12) but please ensure
+ *                     each NPC has a different Context Variable ID value.             
+ *  
  * ---
  *
  * Display Response
@@ -197,12 +220,13 @@
  * 4. Implementation Example
  * ===========================================================================
  *
- * Let's create an example event!
  *
  * With the following implementation, when the player interacts with the event,
- * the plugin will prompt the player for input, send the user input to the 
- * server, receive the AI response, display it in the game's message window, 
- * and reset the conversation history variable for the next interaction.
+ * the plugin will create and store a "Character Context" then in another page the
+ * "Send Request" command will prompt the player for input and send it to the 
+ * server and receive the AI response. Finally, in another Event Page, the 
+ * "Display Response" command will display the response in the game's message 
+ * window, and reset the conversation status for the next interaction.
  *
  * ---
  *
@@ -212,27 +236,37 @@
  *     2. Choose "Character Context" from the dropdown.
  *     3. Fill in the arguments for character context, such as name, age, 
  *        traits, dialogue style, background story, events knowledge, 
- *        interests, supportiveness, and max output words.
- *     4. Add another command and choose "Send Request" from the dropdown.
- *     5. Leave the "User Input" argument empty to let the plugin prompt the 
- *        player for input.
- *     6. Set the "Max Input Words" to limit the number of words the player can 
- *        input.
- *     7. Set the "History Variable ID" to store the conversation history.
+ *        interests, supportiveness, max output words and History Variable
+ *        ID.
+ *     4. Go to "Control Variables", select a new variablçe (x) and set its
+ *        value to "1".
  *
  * ---
  *
  * Event Page 2
- * 
  *     1. Add a new event page and set the condition to "Variable x > 1" 
- *        (where "x" is the variable ID you used for the "History Variable ID").
+ *        (where "x" is the variable ID you defined in the first page.
+ *     2. Select "Plugin Command." and choose the "Send Request" command from 
+ *        the dropdown.
+ *     5. Leave the "User Input" argument empty to let the plugin prompt the 
+ *        player for input.
+ *     6. Set the "Max Input Words" value to limit the number of words the 
+ *        player can input.
+ *     7. Set the "History Variable ID" value to store the conversation history.
+ *     8. Create a "Self-Switch" (A) and turn it ON.
+ *
+ * ---
+ *
+ * Event Page 3
+ * 
+ *     1. Add a new event page and set the condition to "Self-Switch: (A)".
  *     2. Select "Plugin Command."
  *     3. Choose "Display Response" from the dropdown.
  *     4. Fill in the arguments for displaying the response, such as event ID 
  *        (0),event page ID (0), actor image, actor name, and wrap text   
  *        length.
- *     5. Add another command to set "Control Variable x" (where "x" is the 
- *        variable ID you used for the "History Variable ID") to 0.
+ *     5. Turn the "Self-Switch" (A) OFF to allow the player to keep interacting
+ *        with NPC
  *
  * ---
  *
@@ -265,49 +299,49 @@
  *
  * @command characterContext
  * @text Character Context
- * @desc Stores the user input data and sends it to the server as JSON.
+ * @desc Stores NPC personality data and stores it in a variable.
  *
  * @arg name
  * @text Name 
  * @desc Name of the character.
  * @type string
- * @default GPT Wizard
+ * @default GPTWizard
  *
  * @arg age
  * @text Age
  * @desc The age of the character.
  * @type number
- * @default 17
+ * @default 33
  *
  * @arg traits
  * @text Personality Traits
  * @desc The traits of the character stored as a JSON array.
  * @type string
- * @default ["friendly", "optimistic", "adventurous"]
+ * @default [“shy",  "mystic", "adventurous"]
  *
  * @arg dialogueStyle
  * @text Dialogue Style
  * @desc The dialogue style of the character.
  * @type string
- * @default casual
+ * @default mysterious
  *
  * @arg backgroundStory
  * @text Background Story
  * @desc The background story of the character.
  * @type string
- * @default John is a skilled adventurer who has traveled the world in search of hidden treasures. He is always eager to help others and believes in the power of friendship.
+ * @default GPT WIzard is a Mage who lives in Mystery Foster. She was brought up by witches and mages after being found as a baby wondering in the forest. She belongs to this tribe that remains undiscovered by most humans but learned the ways of the past and future and is able to interpret signs and energies.
  *
  * @arg eventsKnowledge
  * @text Events Knowledge
  * @desc The character's knowledge of events stored as a JSON object.
  * @type string
- * @default {"Event 1": "Crime scene", "Event 2": "Alice affair with Joseph"}
+ * @default Knows there is a secret map at the entrance of the big cave under a yellow flower and  knows the player harduous future in the forest with many enemies and challenges"
  *
  * @arg interests
  * @text Interests
  * @desc The character's interests stored as a JSON object.
  * @type string
- * @default {"Technology": 7, "Cars": 9}
+ * @default {"Astrology": 7, "Herbology": 9, "History": 8}
  *
  * @arg supportiveness
  * @text Supportiveness
@@ -420,6 +454,7 @@
   }
    
    function wrapText(text, wrapTextLength) {
+   // Display the text response within the window limits
      const words = text.split(' ');
      let wrappedText = '';
      let currentLine = '';
@@ -492,7 +527,7 @@
       },
     };
   
-    // Check if the historyVariableId contains data
+    // Check if the historyVariableId contains data and send request
     if ($gameVariables.value(historyVariableId)) {
       requestOptions.body = JSON.stringify({
         userInput: limitedUserInput,
@@ -502,7 +537,7 @@
         characterContext: $gameVariables.value(contextVariableId), // Use the contextVariableId content
       });
     } else {
-      // If historyVariableID is empty, use characterContext from contextVariableId
+      // If historyVariableID is empty, use characterContext from contextVariableId and send request
       requestOptions.body = JSON.stringify({
         userInput: limitedUserInput,
         playerName: playerName,
@@ -511,10 +546,11 @@
         characterContext: $gameVariables.value(contextVariableId), // Use the contextVariableId content
       });
     }
-    console.log("contextVariableId content:", $gameVariables.value(contextVariableId)); // Log the context data
+    console.log("contextVariableId content:", $gameVariables.value(contextVariableId)); 
     console.log("Request data:", requestOptions.body);
     console.log("Sending request to the server...");
   
+    // Get the response from the Server
     fetch("http://localhost:3002/api/v1/chat/send-message", requestOptions)
       .then(function (response) {
         if (response.ok) {
@@ -527,14 +563,15 @@
         console.log("Received response from server:", data);
   
         // Store the response data in the specified variable (GPT Response)
-        $gameVariables.setValue(gptResponseVariableId, data.response); // Updated to use the plugin parameter
+        $gameVariables.setValue(gptResponseVariableId, data.response); 
 
         // Push the user input and complete chat history from the server to the history variable
         const chatHistory = JSON.parse($gameVariables.value(historyVariableId) || '[]');
         chatHistory.push({ role: 'user', content: userInput });
-        chatHistory.push(...data.chatHistory); // Push the entire chat history
-
-        $gameVariables.setValue(historyVariableId, JSON.stringify(chatHistory)); // Store the updated chat history
+        chatHistory.push(...data.chatHistory); 
+        
+        // Store the updated chat history
+        $gameVariables.setValue(historyVariableId, JSON.stringify(chatHistory)); 
 
         // Update the conversation history variable
         updateConversationHistory(userInput, data.response, historyVariableId);
@@ -575,7 +612,7 @@
             dialogueStyle: dialogueStyle,
         },
         "background story": backgroundStory,
-        "game knowledge": eventsKnowledge, // Use the provided string directly
+        "game knowledge": eventsKnowledge, 
         interests: interests,
         supportiveness: supportiveness,
     };
