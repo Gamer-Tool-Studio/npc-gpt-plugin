@@ -1,12 +1,12 @@
 
-/*:
+ /*:
  * @plugindesc [RPG Maker MZ] [Tier 1] [Version 1.0] [Gamer Tools Studio]
  * 
-* @param apiKey
-* @text API Key
-* @desc The API key to be used for making requests to the server.
-* @type string
-* @default
+ * @param apiKey
+ * @text API Key
+ * @desc The API key to be used for making requests to the server.
+ * @type string
+ * @default
  *
  * @param gptResponseVariableId
  * @text GPT Response Variable ID
@@ -63,10 +63,17 @@
  * This plugin is a Tier 1 plugin. Place it under other plugins of lower tier
  * value on your Plugin Manager list (ie: 0, 1, 2, 3, 4, 5). This is to ensure
  * the best performance.
+ * 
+* ------ API KEY ------
  *
+ * You need to have an account with Gamer Tools Studio and an active API KEY
+ * to be able to connect and send requests to Dialog Craft GPT API. You can
+ * create an account and activate a FREE TRIAL to get your key at
+ * https://gamertoolstudio.com. 
+ * 
  * =============================================================================
- * 1. Setting up Plugin Parameters:
- *============================================================================
+ * 1. Plugin Parameters
+ *==============================================================================
  *
  * The plugin has four parameters that you need to configure.
  *
@@ -106,7 +113,7 @@
  * 
  * =============================================================================
  * 2. Commands List
- *============================================================================
+ *==============================================================================
  *  
  * The plugin provides three command sections that you can use in your events.
  *    
@@ -216,9 +223,9 @@
  *
  * ---
  *
- * ===========================================================================
+ * ============================================================================
  * 4. Implementation Example
- * ===========================================================================
+ * ============================================================================
  *
  *
  * With the following implementation, when the player interacts with the event,
@@ -244,6 +251,7 @@
  * ---
  *
  * Event Page 2
+ * 
  *     1. Add a new event page and set the condition to "Variable x > 1" 
  *        (where "x" is the variable ID you defined in the first page.
  *     2. Select "Plugin Command." and choose the "Send Request" command from 
@@ -317,7 +325,7 @@
  * @text Personality Traits
  * @desc The traits of the character stored as a JSON array.
  * @type string
- * @default [“shy",  "mystic", "adventurous"]
+ * @default ["shy",  "mystic", "adventurous"]
  *
  * @arg dialogueStyle
  * @text Dialogue Style
@@ -335,7 +343,7 @@
  * @text Events Knowledge
  * @desc The character's knowledge of events stored as a JSON object.
  * @type string
- * @default Knows there is a secret map at the entrance of the big cave under a yellow flower and  knows the player harduous future in the forest with many enemies and challenges"
+ * @default Knows there is a secret map at the entrance of the big cave under a yellow flower and  knows the player harduous future in the forest with many enemies and challenges
  *
  * @arg interests
  * @text Interests
@@ -405,9 +413,8 @@
   var playerName = pluginParams['playerName'];
   var playerAccountId = pluginParams['playerAccountId'];
   
- 
+  // Define a custom prompt to get user input
    function showPrompt() {
-     // Define a custom prompt to get user input
      const promptText = "Enter your message:";
      const defaultInput = "hi";
  
@@ -421,7 +428,8 @@
      
      return normalizedInput;
    }  
- 
+
+   // Store interactions in variable
    function updateConversationHistory(userInput, response, historyVariableId) {
     const variableValue = $gameVariables.value(historyVariableId);
     const historyEntry = {
@@ -452,9 +460,9 @@
     const updatedValue = $gameVariables.value(historyVariableId);
     console.log(`Conversation History (Variable ${historyVariableId}):\n${updatedValue}`);
   }
-   
-   function wrapText(text, wrapTextLength) {
+
    // Display the text response within the window limits
+   function wrapText(text, wrapTextLength) {
      const words = text.split(' ');
      let wrappedText = '';
      let currentLine = '';
@@ -475,11 +483,10 @@
  
      return wrappedText;
    }
- 
+   // Show NPC response in-game
    function showGptResponse(response, eventId, eventPageId, actorImage, actorName, wrapTextLength, historyVariableId) {
-    const responseContent = response.content; // Get the "content" from the response
-  
-    const wrappedResponse = wrapText(responseContent, wrapTextLength);
+    const responseContent = response.content;
+    const wrappedResponse = wrapText(responseContent, wrapTextLength);// Get the "content" from the response
   
     $gameMessage.clear();
     $gameMessage.setFaceImage(actorImage, 5);
@@ -502,8 +509,6 @@
    const pluginName = "DialogCraftGptPlugin";
  
    PluginManager.registerCommand(pluginName, 'sendRequest', function (args) {
-    const eventId = parseInt(args.eventId, 10) || 0;
-    const eventPageId = parseInt(args.eventPageId, 10) || 0;
     const historyVariableId = parseInt(args.historyVariableId, 10) || 1;
     let userInput = args.userInput.trim(); // Remove leading/trailing spaces
     const maxInputWords = parseInt(args.maxInputWords, 10) || 50;
@@ -600,7 +605,6 @@
     }
 
     const supportiveness = parseInt(args.supportiveness, 10) || 0;
-    const maxOutputWords = parseInt(args.maxOutputWords, 10) || 100;
     const contextVariableId = parseInt(args.contextVariableId, 10);
 
     // Create the context object directly from the arguments
