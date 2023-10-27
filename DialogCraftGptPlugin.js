@@ -472,7 +472,7 @@
     const historyVariableId = parseInt(args.historyVariableId, 10) || 1;
     let userInput = args.userInput.trim(); // Remove leading/trailing spaces
     const maxInputWords = parseInt(args.maxInputWords, 10) || 50;
-    const contextVariableId = 12; 
+    const contextVariableId = 12;
   
     // Use the custom prompt to get the user input if it's empty or null
     if (!userInput) {
@@ -484,7 +484,7 @@
     // Limit the number of words in userInput
     const words = userInput.split(' ');
     const limitedUserInput = words.slice(0, maxInputWords).join(' ');
-
+  
     let requestOptions = {
       method: 'POST',
       headers: {
@@ -498,8 +498,8 @@
         userInput: limitedUserInput,
         playerName: playerName,
         accountId: playerAccountId,
-        chatHistory: $gameVariables.value(historyVariableId), // Use the chat history content
-        characterContext: {}, 
+        chatHistory: JSON.parse($gameVariables.value(historyVariableId) || '[]'), // Use the existing chat history
+        characterContext: $gameVariables.value(contextVariableId), // Use the contextVariableId content
       });
     } else {
       // If historyVariableID is empty, use characterContext from contextVariableId
@@ -508,7 +508,7 @@
         playerName: playerName,
         accountId: playerAccountId,
         chatHistory: [], // Use an empty array for no history
-        characterContext: $gameVariables.value(contextVariableId), // Use the contextVariableID content
+        characterContext: $gameVariables.value(contextVariableId), // Use the contextVariableId content
       });
     }
     console.log("contextVariableId content:", $gameVariables.value(contextVariableId)); // Log the context data
@@ -528,7 +528,14 @@
   
         // Store the response data in the specified variable (GPT Response)
         $gameVariables.setValue(gptResponseVariableId, data.response); // Updated to use the plugin parameter
-  
+
+        // Push the user input and complete chat history from the server to the history variable
+        const chatHistory = JSON.parse($gameVariables.value(historyVariableId) || '[]');
+        chatHistory.push({ role: 'user', content: userInput });
+        chatHistory.push(...data.chatHistory); // Push the entire chat history
+
+        $gameVariables.setValue(historyVariableId, JSON.stringify(chatHistory)); // Store the updated chat history
+
         // Update the conversation history variable
         updateConversationHistory(userInput, data.response, historyVariableId);
       })
@@ -536,6 +543,7 @@
         console.error("Error:", error);
       });
   });
+  
    
   PluginManager.registerCommand(pluginName, "characterContext", function (args) {
     const age = parseInt(args.age, 10) || 0;
