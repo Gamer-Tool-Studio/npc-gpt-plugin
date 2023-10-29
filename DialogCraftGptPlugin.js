@@ -14,12 +14,6 @@
  * @type variable
  * @default 6
  * 
- * @param playerName
- * @text Player Name
- * @desc Your user name
- * @type string
- * @default
- *
  * @param playerAccountId
  * @text Player Account ID
  * @desc Your Gamer Tool Studio account ID
@@ -64,7 +58,7 @@
  * value on your Plugin Manager list (ie: 0, 1, 2, 3, 4, 5). This is to ensure
  * the best performance.
  * 
-* ------ API KEY ------
+ * ------ API KEY ------
  *
  * You need to have an account with Gamer Tools Studio and an active API KEY
  * to be able to connect and send requests to Dialog Craft GPT API. You can
@@ -86,14 +80,6 @@
  * https://gamertoolstudio.com. Enter your API key in the "API Key"
  * parameter.
  *  
- * ---
- * 
- * Player Name
- * 
- * This is the ID of your account with Gamer Tools Studio. It is used to keep
- * track of your token usage when making requests to the server. Enter your 
- * Account ID in the "AccountId" parameter.
- * 
  * ---
  * 
  * Account ID
@@ -152,6 +138,38 @@
  * Here's the list of all the arguments you can config under each command 
  * section to customize chat GPT as an NPC for your own game:
  *
+ *
+ * ---
+ *
+ * Character Context
+ * 
+ * ------------------  -------------------------------------------------------
+ * Argument            Descripion
+ * -----------------   -------------------------------------------------------
+ * Name                Name of the character(a string).
+ *
+ * Age                 The age of the character (a number.
+ *
+ * Personality Traits  The traits of the character stored as a JSON array. 
+ *                     Example: ["friendly", "optimistic""adventurous"].
+ * Dialogue Style      The dialogue style of the character stored as a JSON 
+ *                     array. Ecample ["casual", "formal"].
+ * Background Story    The background story of the character stored as a JSON 
+ *                     object.
+ *                     The character's knowledge of events stored as a string.
+ * Events Knowledge    Example: "Knows there is a secret map at the entrance
+ *                     of the big cave under a yellow flower and  knows the player 
+ *                     harduous future". 
+ * Interests           The character's interests stored as a JSON object. 
+ *                     Example: {"Technology": 7, "Cars": 9}.
+ * Supportiveness      The supportiveness score of the character to determine 
+ *                     how much its output shall help the player (0 to 10).
+ * Max Output Words    The maximum number of words allowed in the server 
+ *                     response output (a number).
+ * Context Variable ID The ID of the variable used to store an NPC "Character Context"
+ *                     data. Its default value is set to (12) but please ensure
+ *                     each NPC has a different Context Variable ID value.             
+ *  
  * ---
  *
  * Send Request
@@ -169,38 +187,7 @@
  *                     history between the player and the NPC. Its default 
  *                     value is set to (11) but please ensure each NPC has a 
  *                     different Context Variable ID value.   
- *
- * ---
- *
- * Character Context
  * 
- * ------------------  -------------------------------------------------------
- * Argument            Descripion
- * -----------------   -------------------------------------------------------
- * Name                Name of the character(a string).
- *
- * Age                 The age of the character (a number.
- *
- * Personality Traits  The traits of the character stored as a JSON array. 
- *                     Example: ["friendly", "optimistic""adventurous"].
- * Dialogue Style      The dialogue style of the character stored as a JSON 
- *                     array. Ecample "casual", "formal").
- * Background Story    The background story of the character stored as a JSON 
- *                     object.
- *                     The character's knowledge of events stored as a JSON 
- * Events Knowledge    Array. Example: Knows there is a secret map at the entrance
- *                     of the big cave under a yellow flower and  knows the player 
- *                     harduous future". 
- * Interests           The character's interests stored as a JSON object. 
- *                     Example: {"Technology": 7, "Cars": 9}.
- * Supportiveness      The supportiveness score of the character to determine 
- *                     how much its output shall help the player (0 to 10).
- * Max Output Words    The maximum number of words allowed in the server 
- *                     response output (a number).
- * Context Variable ID The ID of the variable used to store an NPC "Character Context"
- *                     data. Its default value is set to (12) but please ensure
- *                     each NPC has a different Context Variable ID value.             
- *  
  * ---
  *
  * Display Response
@@ -410,13 +397,12 @@
   var pluginParams = PluginManager.parameters('DialogCraftGptPlugin');
   var apiKey = pluginParams['apiKey'];
   var gptResponseVariableId = parseInt(pluginParams['gptResponseVariableId']) || 6;
-  var playerName = pluginParams['playerName'];
   var playerAccountId = pluginParams['playerAccountId'];
   
   // Define a custom prompt to get user input
    function showPrompt() {
      const promptText = "Enter your message:";
-     const defaultInput = "hi";
+     const defaultInput = "Hi!";
  
      // Show the prompt window to the player
      let userInput = window.prompt(promptText, defaultInput);
@@ -424,42 +410,9 @@
      // Normalize line breaks to ensure consistency
      const normalizedInput = userInput ? userInput.replace(/\r\n|\r/g, '\n') : '';
      
-     console.log("User Input:", normalizedInput); // Add this line to log the user's input.
-     
+     console.log("User Input:", normalizedInput);
      return normalizedInput;
    }  
-
-   // Store interactions in variable
-   function updateConversationHistory(userInput, response, historyVariableId) {
-    const variableValue = $gameVariables.value(historyVariableId);
-    const historyEntry = {
-      role: "user",
-      content: userInput
-    };
-  
-    if (variableValue) {
-      try {
-        const chatHistory = JSON.parse(variableValue);
-  
-        if (Array.isArray(chatHistory)) {
-          chatHistory.push(historyEntry);
-          chatHistory.push(response);
-          $gameVariables.setValue(historyVariableId, JSON.stringify(chatHistory));
-        } else {
-          // If the chat history is not an array, create a new array with the history
-          $gameVariables.setValue(historyVariableId, JSON.stringify([historyEntry, response]));
-        }
-      } catch (error) {
-        console.error("Error parsing chat history:", error);
-      }
-    } else {
-      $gameVariables.setValue(historyVariableId, JSON.stringify([historyEntry, response]));
-    }
-  
-    // Log the updated content of the conversation history variable
-    const updatedValue = $gameVariables.value(historyVariableId);
-    console.log(`Conversation History (Variable ${historyVariableId}):\n${updatedValue}`);
-  }
 
    // Display the text response within the window limits
    function wrapText(text, wrapTextLength) {
@@ -476,13 +429,14 @@
          currentLine = word;
        }
      }
- 
+
      if (currentLine) {
        wrappedText += (wrappedText ? '\n' : '') + currentLine;
      }
  
      return wrappedText;
    }
+
    // Show NPC response in-game
    function showGptResponse(response, eventId, eventPageId, actorImage, actorName, wrapTextLength, historyVariableId) {
     const responseContent = response.content;
@@ -513,10 +467,14 @@
     let userInput = args.userInput.trim(); // Remove leading/trailing spaces
     const maxInputWords = parseInt(args.maxInputWords, 10) || 50;
     const contextVariableId = 12;
+    
+    // Retrieve the API key from plugin parameters
+    const apiKey = pluginParams['apiKey'];
   
     // Use the custom prompt to get the user input if it's empty or null
     if (!userInput) {
       userInput = showPrompt(); // Call the showPrompt function to get user input
+      
       // Normalize line breaks to ensure consistency
       userInput = userInput ? userInput.replace(/\r\n|\r/g, '\n') : 'Hi!';
     }
@@ -529,23 +487,22 @@
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-      },
+        'Authorization': 'Bearer ' + apiKey // Add the API key to the Authorization header
+      }
     };
   
-    // Check if the historyVariableId contains data and send request
+    // Check if the History Variable contains data and send request
     if ($gameVariables.value(historyVariableId)) {
       requestOptions.body = JSON.stringify({
         userInput: limitedUserInput,
-        playerName: playerName,
         accountId: playerAccountId,
         chatHistory: JSON.parse($gameVariables.value(historyVariableId) || '[]'), // Use the existing chat history
-        characterContext: $gameVariables.value(contextVariableId), // Use the contextVariableId content
+        characterContext: {}, // Use an empty object for Character Context
       });
     } else {
-      // If historyVariableID is empty, use characterContext from contextVariableId and send request
+      // If History Variable is empty, use characterContext from contextVariableId and send request
       requestOptions.body = JSON.stringify({
         userInput: limitedUserInput,
-        playerName: playerName,
         accountId: playerAccountId,
         chatHistory: [], // Use an empty array for no history
         characterContext: $gameVariables.value(contextVariableId), // Use the contextVariableId content
@@ -566,27 +523,22 @@
       })
       .then(function (data) {
         console.log("Received response from server:", data);
-  
-        // Store the response data in the specified variable (GPT Response)
-        $gameVariables.setValue(gptResponseVariableId, data.response); 
-
-        // Push the user input and complete chat history from the server to the history variable
-        const chatHistory = JSON.parse($gameVariables.value(historyVariableId) || '[]');
-        chatHistory.push({ role: 'user', content: userInput });
-        chatHistory.push(...data.chatHistory); 
-        
-        // Store the updated chat history
-        $gameVariables.setValue(historyVariableId, JSON.stringify(chatHistory)); 
-
-        // Update the conversation history variable
-        updateConversationHistory(userInput, data.response, historyVariableId);
+      
+        // Store the assistant response data in the specified variable (GPT Response)
+        $gameVariables.setValue(gptResponseVariableId, data.response);
+      
+        // Store the chat history into the variable
+        $gameVariables.setValue(historyVariableId, JSON.stringify(data.chatHistory));
+      
+        // Log the updated content of the conversation history variable
+        const updatedValue = $gameVariables.value(historyVariableId);
+        console.log(`Conversation History (Variable ${historyVariableId}):\n${updatedValue}`);
       })
       .catch(function (error) {
         console.error("Error:", error);
       });
   });
-  
-   
+     
   PluginManager.registerCommand(pluginName, "characterContext", function (args) {
     const age = parseInt(args.age, 10) || 0;
     const traits = JSON.parse(args.traits || '[]');
