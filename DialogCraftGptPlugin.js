@@ -31,7 +31,7 @@
  * This plugin enables the deployment of dynamic AI-powered conversations
  * with NPCs in RPG Maker MZ game events by sending user inputs to a server 
  * and displaying the server's creative responses wrapped neatly in the game 
- * as one of your characaters. Craft interactive dialogues with artificial 
+ * as one of your characaters. Craft interactive conversations with artificial 
  * intelligence, immersing players in captivating stories and engaging gameplay.
  *
  * Features include, but are not limited to, the following:
@@ -61,7 +61,7 @@
  * ------ API KEY ------
  *
  * You need to have an account with Gamer Tools Studio and an active API KEY
- * to be able to connect and send requests to Dialog Craft GPT API. You can
+ * to be able to connect and send requests to NPC-GPT API. You can
  * create an account and activate a FREE TRIAL to get your key at
  * https://gamertoolstudio.com. 
  * 
@@ -152,7 +152,7 @@
  *
  * Personality Traits  The traits of the character stored as a JSON array. 
  *                     Example: ["friendly", "optimistic""adventurous"].
- * Dialogue Style      The dialogue style of the character stored as a JSON 
+ * Dialogue Style      The speech style of the character stored as a JSON 
  *                     array. Ecample ["casual", "formal"].
  * Background Story    The background story of the character stored as a JSON 
  *                     object.
@@ -316,7 +316,7 @@
  *
  * @arg dialogueStyle
  * @text Dialogue Style
- * @desc The dialogue style of the character.
+ * @desc The speech style of the character.
  * @type string
  * @default mysterious
  *
@@ -394,7 +394,7 @@
 
  (function() {
   // Retrieve the plugin parameters
-  var pluginParams = PluginManager.parameters('DialogCraftGptPlugin');
+  var pluginParams = PluginManager.parameters('NPC-GPT-Plugin');
   var apiKey = pluginParams['apiKey'];
   var gptResponseVariableId = parseInt(pluginParams['gptResponseVariableId']) || 6;
   var playerAccountId = pluginParams['playerAccountId'];
@@ -460,7 +460,7 @@
     }
   }
    
-   const pluginName = "DialogCraftGptPlugin";
+   const pluginName = "NPC-GPT-Plugin";
  
    PluginManager.registerCommand(pluginName, 'sendRequest', function (args) {
     const historyVariableId = parseInt(args.historyVariableId, 10) || 1;
