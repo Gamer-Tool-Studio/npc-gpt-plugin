@@ -13,12 +13,6 @@
  * @desc The ID of the variable where the GPT response will temporarily be stored.
  * @type variable
  * @default 6
- * 
- * @param playerAccountId
- * @text Player Account ID
- * @desc Your Gamer Tool Studio account ID
- * @type string
- * @default
  *
  * @author Gamer Tool Studio
  *
@@ -164,8 +158,8 @@
  *                     Example: {"Technology": 7, "Cars": 9}.
  * Supportiveness      The supportiveness score of the character to determine 
  *                     how much its output shall help the player (0 to 10).
- * Max Output Words    The maximum number of words allowed in the server 
- *                     response output (a number).
+ * Max Output Words    The maximum number of words allowed form the server 
+ *                     response.
  * Context Variable ID The ID of the variable used to store an NPC "Character Context"
  *                     data. Its default value is set to (12) but please ensure
  *                     each NPC has a different Context Variable ID value.             
@@ -266,7 +260,7 @@
  * ---
  *
  * [Note:] Make sure to adjust the event's content and flow according to your 
- * game's needs.
+ * game needs.
  *
  * -----------------------------------------------------------------------------
  *
@@ -348,7 +342,7 @@
  * @text Max Output Words
  * @desc The maximum number of words allowed in the server response output.
  * @type number
- * @default 100
+ * @default 50
  *
  * @arg contextVariableId
  * @text Context Variable ID
@@ -397,7 +391,6 @@
   var pluginParams = PluginManager.parameters('NPC-GPT-Plugin');
   var apiKey = pluginParams['apiKey'];
   var gptResponseVariableId = parseInt(pluginParams['gptResponseVariableId']) || 6;
-  var playerAccountId = pluginParams['playerAccountId'];
   
   // Define a custom prompt to get user input
    function showPrompt() {
@@ -495,7 +488,6 @@
     if ($gameVariables.value(historyVariableId)) {
       requestOptions.body = JSON.stringify({
         userInput: limitedUserInput,
-        accountId: playerAccountId,
         chatHistory: JSON.parse($gameVariables.value(historyVariableId) || '[]'), // Use the existing chat history
         characterContext: {}, // Use an empty object for Character Context
       });
@@ -503,7 +495,6 @@
       // If History Variable is empty, use characterContext from contextVariableId and send request
       requestOptions.body = JSON.stringify({
         userInput: limitedUserInput,
-        accountId: playerAccountId,
         chatHistory: [], // Use an empty array for no history
         characterContext: $gameVariables.value(contextVariableId), // Use the contextVariableId content
       });
@@ -558,6 +549,7 @@
 
     const supportiveness = parseInt(args.supportiveness, 10) || 0;
     const contextVariableId = parseInt(args.contextVariableId, 10);
+    const maxOutputWords = parseInt(args.maxOutputWords, 10) || 50;
 
     // Create the context object directly from the arguments
     const characterContext = {
@@ -571,6 +563,7 @@
         "game knowledge": eventsKnowledge, 
         interests: interests,
         supportiveness: supportiveness,
+        maxOutputWords: maxOutputWords,
     };
 
     // Store the context object in the specified variable (contextVariableId)
@@ -579,19 +572,19 @@
     // Log the provided contextVariableId for debugging
     console.log("Provided contextVariableId:", contextVariableId);
     console.log("contextVariableId content:", $gameVariables.value(contextVariableId)); // Log the context data
-});
- 
- PluginManager.registerCommand(pluginName, "displayResponse", function (args) {
-   const eventId = parseInt(args.eventId, 10) || 0;
-   const eventPageId = parseInt(args.eventPageId, 10) || 0;
-   const actorImage = args.actorImage;
-   const actorName = args.actorName;
-   const wrapTextLength = parseInt(args.wrapTextLength) || 40;
-   const response = $gameVariables.value(gptResponseVariableId);
-   const historyVariableId = parseInt(args.historyVariableId, 10); 
- 
-   if (response && typeof response === 'object') {
-    showGptResponse(response, eventId, eventPageId, actorImage, actorName, wrapTextLength, historyVariableId);
-  }
-});
+  });
+
+  PluginManager.registerCommand(pluginName, "displayResponse", function (args) {
+    const eventId = parseInt(args.eventId, 10) || 0;
+    const eventPageId = parseInt(args.eventPageId, 10) || 0;
+    const actorImage = args.actorImage;
+    const actorName = args.actorName;
+    const wrapTextLength = parseInt(args.wrapTextLength) || 40;
+    const response = $gameVariables.value(gptResponseVariableId);
+    const historyVariableId = parseInt(args.historyVariableId, 10); 
+
+    if (response && typeof response === 'object') {
+      showGptResponse(response, eventId, eventPageId, actorImage, actorName, wrapTextLength, historyVariableId);
+    }
+  });
 })();
