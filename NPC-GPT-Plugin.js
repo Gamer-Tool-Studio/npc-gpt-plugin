@@ -530,7 +530,7 @@
 	   	console.log("Sending request to the server...");
 
 	   	// Get the response from the Server
-	   	fetch("http://localhost:3002/api/v1/chat/send-message", requestOptions)
+	   	fetch("https://npc-gpt-api-04c6279a15ad.herokuapp.com/api/v1/chat/send-message", requestOptions)
   		.then(function (response) {
     		if (response.ok) {
       		return response.json();
@@ -605,13 +605,13 @@
 
   PluginManager.registerCommand(pluginName, "displayResponse", function (args) {
 	  const eventId = parseInt(args.eventId, 10) || 0;
-   const eventPageId = parseInt(args.eventPageId, 10) || 0;
-  	const actorImageFile = args.actorImage;
-  	const actorImageIndex = parseInt(args.actorImageIndex) || 0; // Assuming the face index is provided
-  	const actorName = args.actorName;
-  	const wrapTextLength = parseInt(args.wrapTextLength) || 40;
-  	const response = $gameVariables.value(gptResponseVariableId);
-  	const historyVariableId = parseInt(args.historyVariableId, 10);
+  	  const eventPageId = parseInt(args.eventPageId, 10) || 0;
+  	  const actorImageFile = args.actorImage;
+  	  const actorImageIndex = parseInt(args.actorImageIndex) || 0; // Assuming the face index is provided
+  	  const actorName = args.actorName;
+  	  const wrapTextLength = parseInt(args.wrapTextLength) || 40;
+  	  const response = $gameVariables.value(gptResponseVariableId);
+  	  const historyVariableId = parseInt(args.historyVariableId, 10);
 
   	  if (response && typeof response === 'object') {
 		  showGptResponse(response, eventId, eventPageId, actorImageFile, actorImageIndex, actorName, wrapTextLength, historyVariableId);
