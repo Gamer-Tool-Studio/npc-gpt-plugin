@@ -7,6 +7,12 @@
  * @type string
  * @default
  *
+ * @param apiKeyVariable
+ * @text API Key Variable
+ * @desc The ID of the variable that contains the API key.
+ * @type variable
+ * @default 18
+ *
  * @param gptResponseVariableId
  * @text GPT Response Variable ID
  * @desc The ID of the variable where the GPT response will temporarily be stored.
@@ -408,6 +414,7 @@
   // Retrieve the plugin parameters
   var pluginParams = PluginManager.parameters('NPC-GPT-Plugin');
   var apiKey = pluginParams['apiKey'];
+  var apiKeyVariableId = parseInt(pluginParams['apiKeyVariable']) || 18;
   var gptResponseVariableId = parseInt(pluginParams['gptResponseVariableId']) || 6;
   var responseStatusVariable = parseInt(pluginParams['responseStatusVariable']) || 13;
 	 
@@ -482,12 +489,15 @@
  
    PluginManager.registerCommand(pluginName, 'sendRequest', function (args) {
     const historyVariableId = parseInt(args.historyVariableId, 10) || 1;
-	const contextVariableId = parseInt(args.contextVariableId, 10) || 12;   
-    let userInput = args.userInput.trim(); // Remove leading/trailing spaces
+    const contextVariableId = parseInt(args.contextVariableId, 10) || 12;   
+    let userInput = args.userInput.trim();
     const maxInputWords = parseInt(args.maxInputWords, 10) || 50;
-    
-    // Retrieve the API key from plugin parameters
-    const apiKey = pluginParams['apiKey'];
+
+    // Check if the variable with ID 18 has any value and use it, otherwise use the apiKey from plugin parameters
+    var apiKeyValue = $gameVariables.value(apiKeyVariableId);
+    if (!apiKeyValue) {
+        apiKeyValue = pluginParams['apiKey'];
+    }
   
     // Use the custom prompt to get the user input if it's empty or null
     if (!userInput) {
@@ -505,7 +515,7 @@
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + apiKey // Add the API key to the Authorization header
+        'Authorization': 'Bearer ' + apiKeyValue // Add the API key to the Authorization header
       }
     };
   
@@ -552,7 +562,7 @@
     		console.log(`Conversation History (Variable 		${historyVariableId}):\n${updatedValue}`);
     
     		// Set the response status variable to 1
-    		$gameVariables.setValue(responseStatusVariable, 1); // Added this line
+    		$gameVariables.setValue(responseStatusVariable, 1); 
   		})
   		.catch(function (error) {
     		console.error("Error:", error);
@@ -600,14 +610,14 @@
 
     // Log the provided contextVariableId for debugging
     console.log("Provided contextVariableId:", contextVariableId);
-    console.log("contextVariableId content:", $gameVariables.value(contextVariableId)); // Log the context data
+    console.log("contextVariableId content:", $gameVariables.value(contextVariableId)); 
   });
 
   PluginManager.registerCommand(pluginName, "displayResponse", function (args) {
 	  const eventId = parseInt(args.eventId, 10) || 0;
   	  const eventPageId = parseInt(args.eventPageId, 10) || 0;
   	  const actorImageFile = args.actorImage;
-  	  const actorImageIndex = parseInt(args.actorImageIndex) || 0; // Assuming the face index is provided
+  	  const actorImageIndex = parseInt(args.actorImageIndex) || 0;
   	  const actorName = args.actorName;
   	  const wrapTextLength = parseInt(args.wrapTextLength) || 40;
   	  const response = $gameVariables.value(gptResponseVariableId);
