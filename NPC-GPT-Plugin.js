@@ -81,29 +81,38 @@
  *    
  * API Key 
  *
- * This is the API key required for making requests to the server. Log in
- * to your account with Gamer Tools Studio and activate your key at 
+ * This key is required for making requests to the server. Log in
+ * to your account with Gamer Tool Studio and activate your key at 
  * https://gamertoolstudio.com. Enter your API key in the "API Key"
  * parameter.
  *  
  * ---
  * 
- * Account ID
+ * API Key Variable
  * 
- * This is the ID of your account with Gamer Tools Studio. It is used to keep
- * track of your token usage when making requests to the server. Enter your 
- * Account ID in the "AccountId" parameter.
+ * This is the ID of a variable used to store the API key and to authenticate 
+ * the requests with NPC-GPT API. 
  * 
  * ---
  * 
  * GPT Response Variable ID
  * 
- * This is the ID of the variable where the character response  provided by the 
- * server is termporarily stored. It is used to be displayed in the game as the
- * NPC response and is updated every single request.You can leave it as the
- * default value (6) or change it to a different variable ID.
+ * This is the ID of the variable where the characters responses  provided by the 
+ * server is temporarily stored. It is used to display theNPC response in the game and 
+ * is updated every single request.You can leave it as the
+ * default 
+ value (6) or change it to a different variable ID.
  * 
- * =============================================================================
+ * ---
+ *
+ * Response Status Variable
+ * 
+ * This is the ID of the variable used by sendRequest Command to control the 
+ * status of the player and NPC response. It updates its value to 1 when the 
+ * player sends an input to the server and changes it back to 0 when a response is
+ * received in the game.
+ * 
+ =============================================================================
  * 2. Commands List
  *==============================================================================
  *  
@@ -173,7 +182,7 @@
  * Max Output Words    The maximum number of words allowed form the server 
  *                     response.
  * Context Variable ID The ID of the variable used to store an NPC "Character Context"
- *                     data. Its default value is set to (12) but please ensure
+ *                     data. Its default value is set to (12) but  make sure
  *                     each NPC has a different Context Variable ID value.             
  *  
  * ---
@@ -194,6 +203,10 @@
  *                     value is set to (11) but please ensure each NPC has a 
  *                     different Context Variable ID value.   
  * 
+ * Context Variable ID The ID of the variable used to store an NPC "Character Context"
+ *                     data. Make sure the value matches the one defined in 
+ *		       "Character Context Command".
+ *  
  * ---
  *
  * Display Response
@@ -209,6 +222,8 @@
  *                     a specific page.
  * Actor Image         The image of the characater played by GPT to be 
  *                     displayed in the response window (database image).
+ * Actor Image Index   index of the image containing the right character in
+ *			case your file has multiple faces in it.
  * Actor Name          The name of the charactaer palyed by GPT to be 
  *                     displayed in the response window (text).
  * Wrap Text Length    The word length for wrapping the server response in the 
@@ -236,17 +251,15 @@
  *     2. Choose "Character Context" from the dropdown.
  *     3. Fill in the arguments for character context, such as name, age, 
  *        traits, dialogue style, background story, events knowledge, 
- *        interests, supportiveness, max output words and History Variable
- *        ID.
- *     4. Go to "Control Variables", select a new variablçe (x) and set its
- *        value to "1".
+ *        interests, supportiveness, max output words and Context Variable
+ *         ID      
+ *     4. Turn the "Self Switch: A" ON, in the "Control Self Switches" option
  *
  * ---
  *
  * Event Page 2
  * 
- *     1. Add a new event page and set the condition to "Variable x > 1" 
- *        (where "x" is the variable ID you defined in the first page.
+ *     1. Add a new event page and set the condition to "Self Switch: A" 
  *     2. Select "Plugin Command." and choose the "Send Request" command from 
  *        the dropdown.
  *     5. Leave the "User Input" argument empty to let the plugin prompt the 
@@ -254,25 +267,30 @@
  *     6. Set the "Max Input Words" value to limit the number of words the 
  *        player can input.
  *     7. Set the "History Variable ID" value to store the conversation history.
- *     8. Create a "Self-Switch" (A) and turn it ON.
+ *     8. Provide the "Context Variable ID" defined in the precious command.
  *
  * ---
  *
  * Event Page 3
  * 
- *     1. Add a new event page and set the condition to "Self-Switch: (A)".
+ *     1. Add a new event page and set the condition to 
+ *	"Variable 0013: Response status > 1". Make sure the variable ID is the
+ 	same as the one set in the Plugin Parameters.
  *     2. Select "Plugin Command."
  *     3. Choose "Display Response" from the dropdown.
  *     4. Fill in the arguments for displaying the response, such as event ID 
- *        (0),event page ID (0), actor image, actor name, and wrap text   
+ *        (0),event page ID (0), actor image, actor image index, actor name, and wrap text   
  *        length.
- *     5. Turn the "Self-Switch" (A) OFF to allow the player to keep interacting
- *        with NPC
+ *     5. Change the value of "Variable 0013: Response status to 0 in order to
+ *	keep interacting with NPC.
  *
  * ---
  *
  * [Note:] Make sure to adjust the event's content and flow according to your 
  * game needs.
+ *
+ * CHECK THE COMPLETE USER GUIDE IN OUR DOCUMENTATION AT
+ * https://gamertoolstudio.gitbook.io/npc-gpt/plugin-user-guide/getting-started
  *
  * -----------------------------------------------------------------------------
  *
@@ -493,7 +511,7 @@
     let userInput = args.userInput.trim();
     const maxInputWords = parseInt(args.maxInputWords, 10) || 50;
 
-    // Check if the variable with ID 18 has any value and use it, otherwise use the apiKey from plugin parameters
+    // Check if the API KEY variable has any value and use it, otherwise use the apiKey from plugin parameters
     var apiKeyValue = $gameVariables.value(apiKeyVariableId);
     if (!apiKeyValue) {
         apiKeyValue = pluginParams['apiKey'];
