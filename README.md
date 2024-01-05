@@ -14,7 +14,7 @@ NPC-GPT is a plugin for RPG Maker MZ that enables communication with the GPT-4 m
 
 ## Installation
 
-1. Download the `NPC-GPT_Plugin.js` file available in this repo.
+1. Download the [`NPC-GPT_Plugin.js`](https://github.com/Gamer-Tool-Studio/npc-gpt-plugin/blob/main/NPC-GPT-Plugin.js) file available in this repo.
 2. Place the downloaded file in your RPG Maker MZ project's `js/plugins` directory.
 3. Open your RPG Maker MZ project and go to "Plugin Manager."
 4. Locate the "NPC-GPT-Plugin" and activate it.
