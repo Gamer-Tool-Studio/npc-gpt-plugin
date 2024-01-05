@@ -1,5 +1,5 @@
  /*:
- * @plugindesc [RPG Maker MZ] [Tier 1] [Version 1.0] [Gamer Tools Studio]
+ * @plugindesc [RPG Maker MZ] [Version 1.0] [Gamer Tools Studio]
  * 
  * @param apiKey
  * @text API Key
@@ -57,12 +57,6 @@
  *
  * This plugin is made for RPG Maker MZ. This will not work in other iterations         
  * of RPG Maker.
- *
- * ------ Tier 1 ------
- *
- * This plugin is a Tier 1 plugin. Place it under other plugins of lower tier
- * value on your Plugin Manager list (ie: 0, 1, 2, 3, 4, 5). This is to ensure
- * the best performance.
  * 
  * ------ API KEY ------
  *
