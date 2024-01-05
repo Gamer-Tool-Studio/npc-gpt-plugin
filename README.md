@@ -9,7 +9,7 @@ NPC-GPT is a plugin for RPG Maker MZ that enables communication with the GPT-4 m
 - Send requests with user inputs to GPT-4 model.
 - Create character contexts and traits to create AI-powered NPC personalities.
 - Receive responses from the AI NPCs in your game.
--  Seamlessly display responses in game events.
+- Seamlessly display responses in game events.
 - Limit the length of input and output messages.
 
 ## Installation
@@ -33,7 +33,7 @@ To use the NPC-GPT plugin, you need an account with Gamer Tools Studio:
 - `apiKey`: The API key used for making requests to the server.
 - `ApiKeyVariableId`: game Variable ID to store the API Key within the game
 - `gptResponseVariableId`: The ID of the variable where the GPT response will be stored.
-- ´responseStatusVariable´: game Variable ID to manage the status repsponse from the NPC-GPT API.
+- `responseStatusVariable`: game Variable ID to manage the status repsponse from the NPC-GPT API.
 
 ## Plugin Commands
 
