@@ -1,5 +1,5 @@
  /*:
- * @plugindesc [RPG Maker MZ] [Version 1.0] [Gamer Tools Studio]
+ * @plugindesc [RPG Maker MZ] [Version 1.1.0] [Gamer Tools Studio]
  * 
  * @param apiKey
  * @text API Key
@@ -103,14 +103,14 @@
  * 
  * This is the ID of the variable used by sendRequest Command to control the 
  * status of the player and NPC response. It updates its value to 1 when the 
- * player sends an input to the server and changes it back to 0 when a response is
- * received in the game.
+ * player sends an input to the server and changes it back to 0 when a response
+ * is received in the game.
  * 
  =============================================================================
  * 2. Commands List
  *==============================================================================
  *  
- * The plugin provides three command sections that you can use in your events.
+ * The plugin provides four command sections that you can use in your events.
  *    
  * ---
  * 
@@ -121,6 +121,12 @@
  * ou can provide information about the character's name, age,
  * personality traits, background story, knowledge of events, interests and
  * supportiveness.
+ *    
+ * ---
+ * User Input
+ *
+ * This command allows you to setup a dialogue Window with the skins used by
+ * your game to input the player messages as the one of the playable actors.
  *    
  * ---
  * 
@@ -161,23 +167,55 @@
  *
  * Personality Traits  The traits of the character stored as a JSON array. 
  *                     Example: ["friendly", "optimistic""adventurous"].
+ *
  * Dialogue Style      The speech style of the character stored as a JSON 
  *                     array. Ecample ["casual", "formal"].
+ *
  * Background Story    The background story of the character stored as a JSON 
  *                     object.
  *                     The character's knowledge of events stored as a string.
+ *
  * Events Knowledge    Example: "Knows there is a secret map at the entrance
- *                     of the big cave under a yellow flower and  knows the player 
- *                     harduous future". 
+ *                     of the big cave under a yellow flower and  knows the
+ *                     player harduous future". 
+ *
  * Interests           The character's interests stored as a JSON object. 
  *                     Example: {"Technology": 7, "Cars": 9}.
+ *
  * Supportiveness      The supportiveness score of the character to determine 
  *                     how much its output shall help the player (0 to 10).
+ *
  * Max Output Words    The maximum number of words allowed form the server 
  *                     response.
- * Context Variable ID The ID of the variable used to store an NPC "Character Context"
- *                     data. Its default value is set to (12) but  make sure
- *                     each NPC has a different Context Variable ID value.             
+ *
+ * Context Variable ID The ID of the variable used to store an NPC "Character 
+ *                     Context" data. Its default value is set to (12) but  make
+ *					   sure each NPC has a different Context Variable ID value. 
+ *
+ * ---
+ *
+ * User Input
+ * 
+ * ------------------  -------------------------------------------------------
+ * Argument            Descripion
+ * -----------------   -------------------------------------------------------
+ *
+ *                     The text input provided by the player. This is usually 
+ * actorName           left empty when using the plugin command in an event,
+ *                     as the plugin will prompt the player for input.
+ *
+ * Actor Face Image    The image of the character interacting with the AI NPC.
+ *					   Default is set to the party leader image.
+ *
+ * Actor Face Index    The index of the image containing the desired actor.
+ *                     Default is set to the party leader index
+ *
+ * Placeholder Text    The text displayed as placeholder in the windor before
+ *					   the player starts typing.
+ *
+ * Input Variable      The ID of the variable used to temporarly store the user *					  input. Its default value is set to (19).
+ *
+ * Max Input Words     The maximum number of words allowed in the user input.
  *  
  * ---
  *
@@ -186,9 +224,8 @@
  * ------------------  -------------------------------------------------------
  * Argument            Descripion
  * -----------------   -------------------------------------------------------
- *                     The text input provided by the player. This is usually 
- * User Input          left empty when using the plugin command in an event,
- *                     as the plugin will prompt the player for input.
+ *
+ * Input Variable      The ID of the variable used to temporarly store the user *					  input. Used in this command as userInput to send the 	   *				  	 request to the server,
  *
  * Max Input Words     The maximum number of words allowed in the user input.
  *
@@ -197,9 +234,7 @@
  *                     value is set to (11) but please ensure each NPC has a 
  *                     different Context Variable ID value.   
  * 
- * Context Variable ID The ID of the variable used to store an NPC "Character Context"
- *                     data. Make sure the value matches the one defined in 
- *		       "Character Context Command".
+ * Context Variable ID The ID of the variable used to store an NPC "Character 	*					  Context" data. Make sure the value matches the one	   *					 defined in "Character Context Command".			      
  *  
  * ---
  *
@@ -231,17 +266,19 @@
  *
  *
  * With the following implementation, when the player interacts with the event,
- * the plugin will create and store a "Character Context" then in another page the
- * "Send Request" command will prompt the player for input and send it to the 
- * server and receive the AI response. Finally, in another Event Page, the 
- * "Display Response" command will display the response in the game's message 
- * window, and reset the conversation status for the next interaction.
+ * the plugin will create and store a "Character Context" then in another page
+ * the "User Input" command will prompt the player for input and then "Send
+ * Request" will send it to the server and receive the AI response. Finally, in
+ * another Event Page, the "Display Response" command will display the response
+ * in the game's message window, and reset the conversation status for the next
+ * interaction.
  *
  * ---
  *
  * Event Page 1
  *
- *     1. Add a new event page and select "Plugin Command".
+ *     1. Add a new event page with the trigger "Player Touch" and select      
+ *        "Plugin Command".
  *     2. Choose "Character Context" from the dropdown.
  *     3. Fill in the arguments for character context, such as name, age, 
  *        traits, dialogue style, background story, events knowledge, 
@@ -253,30 +290,44 @@
  *
  * Event Page 2
  * 
- *     1. Add a new event page and set the condition to "Self Switch: A" 
- *     2. Select "Plugin Command." and choose the "Send Request" command from 
+ *     1. Add a new event page with a trigger "Action button"and set the      
+ *        condition to "Self Switch: A" 
+ *     2. Select "Plugin Command." and choose the "User Input" command from 
  *        the dropdown.
- *     5. Leave the "User Input" argument empty to let the plugin prompt the 
- *        player for input.
- *     6. Set the "Max Input Words" value to limit the number of words the 
+ *     5. Choose the Actor Name of the player speaking or leave the deafult
+ *        values to use the party leader name.
+ *	   6. Choose the Face Image and Face Image Index of the player speaking or  
+ *        leave the deafult values to use the party leader image.
+ *	   7. Seelect a Placeholder Text to use when launching the window.
+ *     8. Set the "Max Input Words" value to limit the number of words the 
+ *        player can input.
+ *     9. Set the "History Variable ID" value to store the conversation history.
+ *
+ * ---
+ *
+ * Event Page 3
+ * 
+ *     1. Add a new event page with an "Autorun" trigger and set the condition
+ *       to "Self Switch: A".
+ *	   2. Add another condition "Variable 19 > 1" to ensure the command starts
+ *        only after an input is provided by the player
+ *     3. Select "Plugin Command." and choose the "Send Request" command from 
+ *        the dropdown.
+ *     5. Use the deafult "Input variable" to use the text input by the player.
+ *	   6. Set the "Max Input Words" value to limit the number of words the 
  *        player can input.
  *     7. Set the "History Variable ID" value to store the conversation history.
  *     8. Provide the "Context Variable ID" defined in the precious command.
  *
  * ---
  *
- * Event Page 3
+ * Event Page 4
  * 
- *     1. Add a new event page and set the condition to 
- *	"Variable 0013: Response status > 1". Make sure the variable ID is the
- 	same as the one set in the Plugin Parameters.
+ *     1. Add a new event page with the trigger "Autorun" and set the condition *		 to "Variable 0013: Response status > 1". Make sure the variable ID is *	    the same as the one set in the Plugin Parameters.
  *     2. Select "Plugin Command."
  *     3. Choose "Display Response" from the dropdown.
  *     4. Fill in the arguments for displaying the response, such as event ID 
- *        (0),event page ID (0), actor image, actor image index, actor name, and wrap text   
- *        length.
- *     5. Change the value of "Variable 0013: Response status to 0 in order to
- *	keep interacting with NPC.
+ *        (0),event page ID (0), actor image, actor image index, actor name, and *        wrap text length.
  *
  * ---
  *
@@ -288,21 +339,56 @@
  *
  * -----------------------------------------------------------------------------
  *
- * @command sendRequest
- * @text Send Request
- * @desc Sends the user input to the server and stores the response for the "Display Response" command.
- *
- * @arg userInput
+ * @command userInput
  * @text User Input
- * @desc The text input provided by the player.
- * @type multiline_string
- * @default 
+ * @desc Creates a custom dialogue window for the player to input text and stores it in a custom variable.
+ *
+ * @arg actorName
+ * @text Actor Name
+ * @desc The name of the actor. Default is main player name.
+ * @type text
+ * @default
+ *
+ * @arg actorFaceImage
+ * @text Actor Face Image
+ * @desc The face image of the actor. Default is main player image.
+ * @type file
+ * @dir img/faces/
+ * @default
+ *
+ * @arg actorFaceImageIndex
+ * @text Actor Face Image Index
+ * @desc The face image index of the actor. Default is main player face index.
+ * @type number
+ * @default 0
+ *
+ * @arg placeholderText
+ * @text Placeholder Text
+ * @desc The placeholder text. Default is "Enter your message...".
+ * @type text
+ * @default Enter your message...
+ *
+ * @arg inputVariable
+ * @text Input Variable
+ * @desc The variable to store the input text. Default is variable 19.
+ * @type variable
+ * @default 19
  *
  * @arg maxInputWords
  * @text Max Input Words
  * @desc The maximum number of words allowed in the user input.
  * @type number
  * @default 50
+ *
+ * @command sendRequest
+ * @text Send Request
+ * @desc Sends the user input to the server and stores the response for the "Display Response" command.
+ *
+ * @arg inputVariable
+ * @text Input Variable
+ * @desc The variable to store the input text. Default is variable 19.
+ * @type variable
+ * @default 19
  *
  * @arg historyVariableId
  * @text History Variable ID
@@ -430,20 +516,140 @@
   var gptResponseVariableId = parseInt(pluginParams['gptResponseVariableId']) || 6;
   var responseStatusVariable = parseInt(pluginParams['responseStatusVariable']) || 13;
 	 
-  // Define a custom prompt to get user input
-   function showPrompt() {
-     const promptText = "Enter your message:";
-     const defaultInput = "Hi!";
- 
-     // Show the prompt window to the player
-     let userInput = window.prompt(promptText, defaultInput);
- 
-     // Normalize line breaks to ensure consistency
-     const normalizedInput = userInput ? userInput.replace(/\r\n|\r/g, '\n') : '';
-     
-     console.log("User Input:", normalizedInput);
-     return normalizedInput;
-   }  
+   // Prepare Input
+    Window_Message.prototype.prepareInputWindow = function(args) {
+        this._inputArgs = args;
+        this._inputVariable = parseInt(args.inputVariable, 10) || 19;
+        this._inputLines = [''];
+
+        // Set speaker name to actorName each time before displaying the input window.
+        const actorName = args.actorName || $gameParty.leader().name();
+        $gameMessage.setSpeakerName(actorName);
+
+        this.activateInput();
+        this.open();
+        this.setPositionType();
+        this.refreshInputWindow(); // This will now reflect the updated speakerName
+    };
+
+    Window_Message.prototype.setPositionType = function() {
+        // Position type: 0 (top), 1 (middle), 2 (bottom)
+        const positionType = 2; // Force to bottom for input
+        this.y = this.calculateY(positionType);
+    };
+
+    Window_Message.prototype.calculateY = function(positionType) {
+        const messageY = {
+            0: 0, // Top
+            1: (Graphics.boxHeight - this.height) / 2, // Middle
+            2: Graphics.boxHeight - this.height // Bottom
+        };
+        return messageY[positionType];
+    };
+
+ 	// Activate Input
+	Window_Message.prototype.activateInput = function() {
+		if (this._inputActive) return; // Prevent multiple activations
+
+		this._originalKeyMapper = Object.assign({}, Input.keyMapper);
+		this._overrideKeyMapperForTextInput();
+
+		this._inputActive = true;
+		this._boundHandleInput = this.handleInput.bind(this);
+		document.addEventListener('keydown', this._boundHandleInput);
+
+		this._lastInputTime = 0; // Debounce setup
+		this.refreshInputWindow();
+	};
+
+	// Deactivate Input
+	Window_Message.prototype.deactivateInput = function() {
+		document.removeEventListener('keydown', this._boundHandleInput);
+		Input.keyMapper = this._originalKeyMapper;
+		this._inputActive = false;
+	};
+
+	// Temporarily override key mappings for special keys.
+	Window_Message.prototype._overrideKeyMapperForTextInput = function() {
+		Input.keyMapper[32] = 'space'; 
+		Input.keyMapper[90] = 'z';     
+		Input.keyMapper[88] = 'x';
+		Input.keyMapper[87] = 'w';
+	};
+
+    // Handle Input
+    Window_Message.prototype.handleInput = function(event) {
+        if (!this._inputActive || !this.isOpen()) return;
+
+        const currentLineIndex = this._inputLines.length - 1;
+        let currentLine = this._inputLines[currentLineIndex];
+
+        if (event.key === 'Enter') {
+            this.processInput();
+            event.preventDefault();
+        } else if (event.key === 'Backspace') {
+            if (currentLine.length > 0) {
+                this._inputLines[currentLineIndex] = currentLine.slice(0, -1);
+            } else if (this._inputLines.length > 1) {
+                this._inputLines.pop();
+            }
+            this.refreshInputWindow();
+        } else if (event.key.length === 1) {
+            if (currentLine.length < 40) {
+                this._inputLines[currentLineIndex] += event.key;
+            } else if (this._inputLines.length < 4) {
+                this._inputLines.push(event.key);
+            }
+            this.refreshInputWindow();
+        }
+    };
+
+    // Process Input
+    Window_Message.prototype.processInput = function() {
+        const inputText = this._inputLines.join('\n');
+        $gameVariables.setValue(this._inputVariable, inputText);
+        this.deactivateInput();
+        this.close();
+
+        // Reset the speakerName after processing the input.
+        $gameMessage.setSpeakerName('');
+    };
+
+    // Refresh Input Window
+    Window_Message.prototype.refreshInputWindow = function() {
+        if (!this._inputLines) {
+            return; // Guard clause
+        }
+		
+		// Face Image and text input positioning
+		const faceImageWidth = 144;
+		const textMargin = 15;
+		const textStartX = faceImageWidth + textMargin;
+
+
+		// This sets the text to start at the very top of the window.
+		const textStartY = 0;
+
+
+		// This ensures the actor's face image remains on the screen.
+		this.contents.clearRect(textStartX, textStartY, this.contents.width - textStartX, this.contents.height);
+
+		this.resetFontSettings();
+
+		const args = this._inputArgs;
+
+        
+        const textToShow = this._inputLines.join('').trim() !== '' ? this._inputLines.join('\n') : "Enter your message...";
+
+        // Draw the text at the calculated position.
+        this.drawTextEx(textToShow, textStartX, textStartY);
+    };
+
+    // Clear contents
+    Window_Message.prototype.clear = function() {
+        this.contents.clear(); // Clears the window's drawing contents
+        this._textState = null; // Reset text state
+    }; 
 
    // Display the text response within the window limits
    function wrapText(text, wrapTextLength) {
@@ -489,7 +695,7 @@
          const event = $gameMap.event(eventId);
          if (event) {
            event.start(eventPageId);
-         }
+		  }
        }
 
        if (response.chatHistory) {
@@ -497,91 +703,113 @@
 	   }
    }
 
-   const pluginName = "NPC-GPT-Plugin";
- 
-   PluginManager.registerCommand(pluginName, 'sendRequest', function (args) {
-    const historyVariableId = parseInt(args.historyVariableId, 10) || 1;
-    const contextVariableId = parseInt(args.contextVariableId, 10) || 12;   
-    let userInput = args.userInput.trim();
+  const pluginName = "NPC-GPT-Plugin";
+
+  PluginManager.registerCommand(pluginName, 'userInput', function (args) {
+    const inputVariable = parseInt(args.inputVariable, 10) || 19;
+    const actorName = args.actorName || $gameParty.leader().name();
+    const actorFaceImage = args.actorFaceImage || $gameParty.leader().faceName();
+    const actorFaceImageIndex = parseInt(args.actorFaceImageIndex, 10) || $gameParty.leader().faceIndex();
+    const placeholderText = args.placeholderText ? args.placeholderText : 'Enter your message...';
     const maxInputWords = parseInt(args.maxInputWords, 10) || 50;
 
-    // Check if the API KEY variable has any value and use it, otherwise use the apiKey from plugin parameters
-    var apiKeyValue = $gameVariables.value(apiKeyVariableId);
-    if (!apiKeyValue) {
-        apiKeyValue = pluginParams['apiKey'];
-    }
-  
-    // Use the custom prompt to get the user input if it's empty or null
-    if (!userInput) {
-      userInput = showPrompt(); // Call the showPrompt function to get user input
-      
-      // Normalize line breaks to ensure consistency
-      userInput = userInput ? userInput.replace(/\r\n|\r/g, '\n') : 'Hi!';
-    }
-  
-    // Limit the number of words in userInput
-    const words = userInput.split(' ');
-    const limitedUserInput = words.slice(0, maxInputWords).join(' ');
-  
-    let requestOptions = {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + apiKeyValue // Add the API key to the Authorization header
-      }
-    };
-  
-    // Check if the History Variable contains data and send request
-    if ($gameVariables.value(historyVariableId)) {
-		requestOptions.body = JSON.stringify({
-			userInput: limitedUserInput,
-      		chatHistory: JSON.parse($gameVariables.value(historyVariableId) || '[]'), // Use the existing chat history
-      		characterContext: {}, // Use an empty object for Character Context
-		});
-	} else {
-		// If History Variable is empty, use characterContext from contextVariableId and send request
-		requestOptions.body = JSON.stringify({
-			userInput: limitedUserInput,
-      		chatHistory: [], // Use an empty array for no history
-      		characterContext: $gameVariables.value(contextVariableId), // Use the contextVariableId content
-		});
-	}
-	   
-	   	console.log("contextVariableId content:", 		$gameVariables.value(contextVariableId)); 
-	   	console.log("Request data:", requestOptions.body);
-	   	console.log("Sending request to the server...");
+    // Set up the game message with speaker name and face image, but no text.
+    $gameMessage.setFaceImage(actorFaceImage, actorFaceImageIndex);
+    $gameMessage.setSpeakerName(actorName);
+    $gameMessage.add(placeholderText);
 
-	   	// Get the response from the Server
-	   	fetch("https://npc-gpt-api-04c6279a15ad.herokuapp.com/api/v1/chat/send-message", requestOptions)
-  		.then(function (response) {
-    		if (response.ok) {
-      		return response.json();
-    		} else {
-      		throw new Error("HTTP request failed");
-    		}
-  		})
-  		.then(function (data) {
-    		console.log("Received response from server:", data);
-  
-    		// Store the assistant response data in the specified variable (GPT Response)
-    		$gameVariables.setValue(gptResponseVariableId, 	data.response);
-  
-    		// Store the chat history into the variable
-    		$gameVariables.setValue(historyVariableId, JSON.stringify(data.chatHistory));
-  
-    		// Log the updated content of the conversation history variable
-    		const updatedValue = 		$gameVariables.value(historyVariableId);
-    		console.log(`Conversation History (Variable 		${historyVariableId}):\n${updatedValue}`);
-    
-    		// Set the response status variable to 1
-    		$gameVariables.setValue(responseStatusVariable, 1); 
-  		})
-  		.catch(function (error) {
-    		console.error("Error:", error);
-  		});
-   });
+    // Ensure the message window activates input mode once it's open.
+    const scene = SceneManager._scene;
+    if (scene instanceof Scene_Map) {
+      const messageWindow = scene._messageWindow;
+      if (messageWindow) {
+        messageWindow.prepareInputWindow(args);
+        messageWindow.activateInput();
+      }
+    }
+  });
+
+  PluginManager.registerCommand(pluginName, 'sendRequest', function (args) {
+    const historyVariableId = parseInt(args.historyVariableId, 10) || 1;
+    const contextVariableId = parseInt(args.contextVariableId, 10) || 12;   
+    const maxInputWords = parseInt(args.maxInputWords, 10) || 50;
+    const inputVariable = parseInt(args.inputVariable, 10) || 19; 
+    const userInput = $gameVariables.value(inputVariable).toString(); 
+
+    // Proceed only if input is provided
+    if (userInput.trim() !== '') {
+        const words = userInput.split(' ');
+        const limitedUserInput = words.slice(0, maxInputWords).join(' ');
+
+        var apiKeyValue = $gameVariables.value(apiKeyVariableId);
+        if (!apiKeyValue) {
+            apiKeyValue = pluginParams['apiKey']; // Use default API key if variable is empty
+        }
+
+        let requestOptions = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + apiKeyValue
+            }
+        };
+        
+        // Check if the History Variable contains data and send request
+        if ($gameVariables.value(historyVariableId)) {
+            requestOptions.body = JSON.stringify({
+                userInput: limitedUserInput,
+                chatHistory: JSON.parse($gameVariables.value(historyVariableId) || '[]'), // Use the existing chat history
+                characterContext: {}, // Use an empty object for Character Context
+            });
+        } else {
+            // If History Variable is empty, use characterContext from contextVariableId and send request
+            requestOptions.body = JSON.stringify({
+                userInput: limitedUserInput,
+                chatHistory: [], // Use an empty array for no history
+                characterContext: $gameVariables.value(contextVariableId), // Use the contextVariableId content
+            });
+        }
+        
+        console.log("contextVariableId content:", $gameVariables.value(contextVariableId)); 
+        console.log("Request data:", requestOptions.body);
+        console.log("Sending request to the server...");
+		
+		// Set the inputVariable variable back to 0
+		$gameVariables.setValue(inputVariable, 0);
+
+        // Get the response from the Server
+        fetch("https://npc-gpt-api-04c6279a15ad.herokuapp.com/api/v1/chat/send-message", requestOptions)
+        .then(function (response) {
+            if (response.ok) {
+                return response.json();
+            } else {
+                throw new Error("HTTP request failed");
+            }
+        })
+        .then(function (data) {
+            console.log("Received response from server:", data);
+
+            // Store the assistant response data in the specified variable (GPT Response)
+            $gameVariables.setValue(gptResponseVariableId, data.response);
+
+            // Store the chat history into the variable
+            $gameVariables.setValue(historyVariableId, JSON.stringify(data.chatHistory));
+
+            // Log the updated content of the conversation history variable
+            const updatedValue = $gameVariables.value(historyVariableId);
+            console.log(`Conversation History (Variable ${historyVariableId}):\n${updatedValue}`);
+
+            // Set the response status variable to 1
+            $gameVariables.setValue(responseStatusVariable, 1);
+        })
+        .catch(function (error) {
+            console.error("Error:", error);
+        });
+    }
+});
      
   PluginManager.registerCommand(pluginName, "characterContext", function (args) {
+	const name = args.name;
     const age = parseInt(args.age, 10) || 0;
     const traits = JSON.parse(args.traits || '[]');
     const dialogueStyle = args.dialogueStyle || '';
