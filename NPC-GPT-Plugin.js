@@ -1,5 +1,5 @@
  /*:
- * @plugindesc [RPG Maker MZ] [Version 1.1.0] [Gamer Tools Studio]
+ * @plugindesc [RPG Maker MZ] [Version 1.20] [Gamer Tools Studio]
  * 
  * @param apiKey
  * @text API Key
@@ -165,25 +165,27 @@
  *
  * Age                 The age of the character (a number.
  *
- * Personality Traits  The traits of the character stored as a JSON array. 
- *                     Example: ["friendly", "optimistic""adventurous"].
+ * Personality Traits  The traits of the character in a string. 
+ *                     Example: friendly, optimistic, adventurous.
  *
- * Dialogue Style      The speech style of the character stored as a JSON 
- *                     array. Ecample ["casual", "formal"].
+ * Dialogue Style      The speech style of the character stored as a string 
+ *                     array. Ecample casual, formal.
  *
  * Background Story    The background story of the character stored as a JSON 
- *                     object.
- *                     The character's knowledge of events stored as a string.
+ *                     string.
  *
- * Events Knowledge    Example: "Knows there is a secret map at the entrance
+ * Events Knowledge    The character's knowledge of events stored as a string.
+ *                     Example: "Knows there is a secret map at the entrance
  *                     of the big cave under a yellow flower and  knows the
  *                     player harduous future". 
  *
- * Interests           The character's interests stored as a JSON object. 
- *                     Example: {"Technology": 7, "Cars": 9}.
+ * Interests           The character's interests stored as a string. 
+ *                     Example: Technology, cars.
  *
- * Supportiveness      The supportiveness score of the character to determine 
- *                     how much its output shall help the player (0 to 10).
+ * Friendliness        The level of firneliness od the character towards the
+ *					   the player. Choose the options available and send it 
+ *					   as a string.
+ *					   Example (best friend.)
  *
  * Max Output Words    The maximum number of words allowed form the server 
  *                     response.
@@ -200,9 +202,8 @@
  * Argument            Descripion
  * -----------------   -------------------------------------------------------
  *
- *                     The text input provided by the player. This is usually 
- * actorName           left empty when using the plugin command in an event,
- *                     as the plugin will prompt the player for input.
+ * Actor Name          The name of the player character. Default value set to
+ *					   the party leader name.
  *
  * Actor Face Image    The image of the character interacting with the AI NPC.
  *					   Default is set to the party leader image.
@@ -412,6 +413,12 @@
  * @type string
  * @default GPTWizard
  *
+ * @arg environment
+ * @text Environment 
+ * @desc The type of game or environment where the story unfolds. 
+ * @type string
+ * @default RPG Game
+ *
  * @arg age
  * @text Age
  * @desc The age of the character.
@@ -420,9 +427,9 @@
  *
  * @arg traits
  * @text Personality Traits
- * @desc The traits of the character stored as a JSON array.
+ * @desc The traits of the character in a string.
  * @type string
- * @default ["shy",  "mystic", "adventurous"]
+ * @default shy,  mystic, adventurous
  *
  * @arg dialogueStyle
  * @text Dialogue Style
@@ -446,13 +453,18 @@
  * @text Interests
  * @desc The character's interests stored as a JSON object.
  * @type string
- * @default {"Astrology": 7, "Herbology": 9, "History": 8}
+ * @default Astrology, Herbology, History
  *
- * @arg supportiveness
- * @text Supportiveness
- * @desc The supportiveness score of the character (0 to 10).
- * @type number
- * @default 10
+ * @arg friendliness
+ * @text Friendliness
+ * @desc The friendliness level of the character. Options: enemy, low, regular, high, best friend.
+ * @type select
+ * @option enemy
+ * @option low
+ * @option regular
+ * @option high
+ * @option best friend
+ * @default regular
  *
  * @arg maxOutputWords
  * @text Max Output Words
@@ -575,6 +587,8 @@
 		Input.keyMapper[90] = 'z';     
 		Input.keyMapper[88] = 'x';
 		Input.keyMapper[87] = 'w';
+		Input.keyMapper[80] = 'p';
+		
 	};
 
     // Handle Input
@@ -806,44 +820,34 @@
             console.error("Error:", error);
         });
     }
-});
+  });
      
   PluginManager.registerCommand(pluginName, "characterContext", function (args) {
-	const name = args.name;
-    const age = parseInt(args.age, 10) || 0;
-    const traits = JSON.parse(args.traits || '[]');
-    const dialogueStyle = args.dialogueStyle || '';
-    const backgroundStory = args.backgroundStory || '';
-    
-    // Parse the eventsKnowledge as a string
-    const eventsKnowledge = args.eventsKnowledge || '';
+	  const name = args.name;
+	  const age = parseInt(args.age, 10) || 0;
+      const traits = args.traits || '';
+	  const dialogueStyle = args.dialogueStyle || '';
+	  const backgroundStory = args.backgroundStory || '';
+	  const eventsKnowledge = args.eventsKnowledge || '';
+	  const environment = args.environment || '';
+	  const interests = args.interests || '';
+	  const friendliness = args.friendliness || 'regular';
+	  const contextVariableId = parseInt(args.contextVariableId, 10);
+	  const maxOutputWords = parseInt(args.maxOutputWords, 10) || 50;
 
-    // Add error handling for JSON parsing for interests
-    let interests = {};
-    try {
-        interests = JSON.parse(args.interests || '{}');
-    } catch (e) {
-        console.error("Error parsing 'interests':", e);
-    }
-
-    const supportiveness = parseInt(args.supportiveness, 10) || 0;
-    const contextVariableId = parseInt(args.contextVariableId, 10);
-    const maxOutputWords = parseInt(args.maxOutputWords, 10) || 50;
-
-    // Create the context object directly from the arguments
-    const characterContext = {
-        name: args.name,
-        age: age,
-        personality: {
-            traits: traits,
-            dialogueStyle: dialogueStyle,
-        },
-        "background story": backgroundStory,
-        "game knowledge": eventsKnowledge, 
-        interests: interests,
-        supportiveness: supportiveness,
-        maxOutputWords: maxOutputWords,
-    };
+	  // Create the context object directly from the arguments
+	  const characterContext = {
+		  name: name,
+		  age: age,
+		  personalityTraits: traits,
+		  dialogueStyle: dialogueStyle,
+		  backgroundStory: backgroundStory,
+		  eventsKnowledge: eventsKnowledge,
+		  environment: environment,
+		  interests: interests,
+		  friendliness: friendliness,
+		  maxOutputWords: maxOutputWords,
+	};
 
     // Store the context object in the specified variable (contextVariableId)
     $gameVariables.setValue(contextVariableId, characterContext);
